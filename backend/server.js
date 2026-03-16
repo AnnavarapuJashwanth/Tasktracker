@@ -15,17 +15,28 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // CORS configuration - allow both local and production
+const allowedOrigins = [
+  // Local development
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  // Production - Netlify
+  'https://tasktracker4297.netlify.app',
+  'https://tasktracker-4xm2.onrender.com',
+  // Add any custom domain or additional frontend URLs
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'https://tasktracker4297.netlify.app',
-    'https://tasktracker-4xm2.onrender.com'
-  ],
+  origin: allowedOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'adminPin', 'admin-pin']
 }));
+
+// Log allowed origins for debugging
+console.log('✅ CORS enabled for origins:', allowedOrigins);
 
 // Connect to MongoDB
 connectDB();
