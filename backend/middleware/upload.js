@@ -28,20 +28,29 @@ const upload = multer({
 // Middleware to upload file to Cloudinary after multer processing
 export const uploadToCloudinary = async (req, res, next) => {
   if (!req.file) {
+    console.log('No file in request, skipping Cloudinary upload');
     return next();
   }
 
   try {
+    console.log('🚀 Starting Cloudinary upload for:', req.file.originalname);
+    
     // Upload to Cloudinary from memory buffer
     const result = await new Promise((resolve, reject) => {
       const stream = cloudinary.v2.uploader.upload_stream(
         {
           folder: 'task-tracker',
           resource_type: 'auto',
+          public_id: `${Date.now()}-${req.file.originalname.split('.')[0]}`,
         },
         (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
+          if (error) {
+            console.error('❌ Cloudinary upload error:', error);
+            reject(error);
+          } else {
+            console.log('✅ Cloudinary upload successful:', result.secure_url);
+            resolve(result);
+          }
         }
       );
       stream.end(req.file.buffer);
@@ -51,10 +60,14 @@ export const uploadToCloudinary = async (req, res, next) => {
     req.file.cloudinaryUrl = result.secure_url;
     req.file.path = result.secure_url; // Use Cloudinary URL as path
     
+    console.log('📸 File stored as:', req.file.cloudinaryUrl);
     next();
   } catch (error) {
-    console.error('Cloudinary upload error:', error);
-    res.status(500).json({ message: 'Failed to upload image to cloud', error: error.message });
+    console.error('❌ Cloudinary middleware error:', error.message);
+    req.cloudinaryError = error; // Store error for route handler
+    // Don't send response here, let route handle it
+    req.file.cloudinaryUrl = null;
+    next();
   }
 };
 

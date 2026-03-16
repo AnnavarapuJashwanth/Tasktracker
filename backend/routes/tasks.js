@@ -24,6 +24,15 @@ const adminAuth = (req, res, next) => {
 // Create task
 router.post('/create', adminAuth, upload.single('photo'), uploadToCloudinary, async (req, res, next) => {
   try {
+    // Check if Cloudinary upload failed
+    if (req.cloudinaryError) {
+      console.error('❌ Cloudinary upload error detected in route handler:', req.cloudinaryError.message);
+      return res.status(500).json({ 
+        message: 'Failed to upload image to cloud', 
+        error: req.cloudinaryError.message 
+      });
+    }
+
     const { title, description, priority, category, sector, dueDate, referencePhone, referenceNumber, assignedToContactId, assignedToContact } = req.body;
 
     console.log('Creating task with:', { title, description, priority, category, sector, dueDate, referencePhone, referenceNumber, assignedToContactId, assignedToContact });
@@ -33,6 +42,7 @@ router.post('/create', adminAuth, upload.single('photo'), uploadToCloudinary, as
     if (req.file) {
       // Store the Cloudinary URL directly
       photoUrl = req.file.cloudinaryUrl;
+      console.log('✅ Photo URL stored from Cloudinary:', photoUrl);
     }
 
     const task = new Task({
@@ -130,6 +140,15 @@ router.get('/stats', adminAuth, async (req, res) => {
 // Update task status
 router.put('/update/:id', adminAuth, upload.single('photo'), uploadToCloudinary, async (req, res) => {
   try {
+    // Check if Cloudinary upload failed
+    if (req.cloudinaryError) {
+      console.error('❌ Cloudinary upload error detected in route handler:', req.cloudinaryError.message);
+      return res.status(500).json({ 
+        message: 'Failed to upload image to cloud', 
+        error: req.cloudinaryError.message 
+      });
+    }
+
     const { status, startTime, endTime, title, description, priority, category, sector, dueDate, referencePhone, referenceNumber, assignedToContactId, assignedToContact, photo } = req.body;
     const task = await Task.findById(req.params.id);
 

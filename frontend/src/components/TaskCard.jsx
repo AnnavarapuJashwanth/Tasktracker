@@ -18,7 +18,9 @@ function TaskCard({ task, onStart, onComplete, onDelete, onCitizen, onAssign, on
       ? 'http://localhost:5000'
       : 'https://tasktracker-4xm2.onrender.com';
     
-    return `${backendUrl}${photoPath}`;
+    // Properly encode the path (handle spaces and special characters)
+    const encodedPath = photoPath.split('/').map(part => encodeURIComponent(part)).join('/');
+    return `${backendUrl}${encodedPath}`;
   };
 
   const getStatusColor = (status) => {
