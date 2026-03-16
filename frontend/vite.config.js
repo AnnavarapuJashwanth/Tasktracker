@@ -8,7 +8,8 @@ const spaFallbackPlugin = {
     return () => {
       server.middlewares.use((req, res, next) => {
         // For SPA routes like /acknowledge/..., serve index.html
-        if (req.url.startsWith('/acknowledge/') && !req.url.includes('.')) {
+        // Check if it's a navigation route (not a file, api call, or static asset)
+        if (!req.url.includes('.') && !req.url.startsWith('/api') && !req.url.startsWith('/@')) {
           req.url = '/index.html';
         }
         next();
