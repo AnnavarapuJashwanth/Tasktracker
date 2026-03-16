@@ -10,6 +10,7 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [adminPin, setAdminPin] = useState('');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const savedPin = localStorage.getItem('adminPin');
@@ -33,14 +34,25 @@ function App() {
     setActiveTab('dashboard');
   }, []);
 
-  if (!isLoggedIn) {
-    return <Login onLogin={handleLogin} />;
-  }
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setSidebarOpen(false); // Close sidebar on mobile when tab is clicked
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar Navigation */}
-      <nav className="fixed left-0 top-0 h-screen w-72 bg-slate-800 text-white shadow-2xl z-50 border-r border-slate-700">
+      {/* Mobile Menu Button */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="fixed top-4 left-4 z-50 lg:hidden bg-slate-800 text-white p-2 rounded-lg"
+      >
+        ☰
+      </button>
+
+      {/* Sidebar Navigation - Mobile Responsive */}
+      <nav className={`fixed left-0 top-0 h-screen w-72 bg-slate-800 text-white shadow-2xl z-40 border-r border-slate-700 transition-transform duration-300 lg:translate-x-0 ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
         {/* Sidebar Header */}
         <div className="border-b border-slate-700 p-6 bg-gradient-to-b from-slate-800 to-slate-900">
           <div className="flex items-center gap-3 mb-2">
@@ -63,7 +75,7 @@ function App() {
                   ? 'bg-gradient-to-r from-indigo-600 to-blue-600 shadow-lg border-l-4 border-indigo-300'
                   : 'hover:bg-slate-700 border-l-4 border-transparent hover:border-indigo-500'
               }`}
-              onClick={() => setActiveTab('dashboard')}
+              onClick={() => handleTabChange('dashboard')}
             >
               <FaHome className="text-lg" /> Dashboard
             </button>
@@ -75,7 +87,7 @@ function App() {
                   ? 'bg-gradient-to-r from-indigo-600 to-blue-600 shadow-lg border-l-4 border-indigo-300'
                   : 'hover:bg-slate-700 border-l-4 border-transparent hover:border-indigo-500'
               }`}
-              onClick={() => setActiveTab('tasks')}
+              onClick={() => handleTabChange('tasks')}
             >
               <FaTasks className="text-lg" /> Tasks
             </button>
@@ -87,7 +99,7 @@ function App() {
                   ? 'bg-gradient-to-r from-indigo-600 to-blue-600 shadow-lg border-l-4 border-indigo-300'
                   : 'hover:bg-slate-700 border-l-4 border-transparent hover:border-indigo-500'
               }`}
-              onClick={() => setActiveTab('contacts')}
+              onClick={() => handleTabChange('contacts')}
             >
               <FaPhone className="text-lg" /> Contacts
             </button>
@@ -99,7 +111,7 @@ function App() {
                   ? 'bg-gradient-to-r from-indigo-600 to-blue-600 shadow-lg border-l-4 border-indigo-300'
                   : 'hover:bg-slate-700 border-l-4 border-transparent hover:border-indigo-500'
               }`}
-              onClick={() => setActiveTab('settings')}
+              onClick={() => handleTabChange('settings')}
             >
               <FaCog className="text-lg" /> Settings
             </button>
@@ -126,12 +138,12 @@ function App() {
         </div>
       </nav>
 
-      {/* Main Content */}
-      <main className="ml-72 flex-1 p-8 overflow-y-auto">
+      {/* Main Content - Responsive */}
+      <main className="lg:ml-72 flex-1 p-4 lg:p-8 overflow-y-auto w-full pt-16 lg:pt-0">
         {activeTab === 'dashboard' && <Dashboard adminPin={adminPin} />}
         {activeTab === 'tasks' && <Tasks adminPin={adminPin} />}
         {activeTab === 'contacts' && <Contacts />}
-        {activeTab === 'settings' && <Settings />}
+        {activeTab === 'settings' && <Settings /></}
       </main>
     </div>
   );

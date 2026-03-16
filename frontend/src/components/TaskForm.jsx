@@ -24,8 +24,17 @@ function TaskForm({ onSubmit, onCancel, editingTask }) {
 
   useEffect(() => {
     if (editingTask) {
+      // Format the date properly for the input field (yyyy-MM-dd format)
+      let formattedDate = editingTask.dueDate;
+      if (editingTask.dueDate) {
+        if (editingTask.dueDate.includes('T')) {
+          // Convert ISO format to yyyy-MM-dd
+          formattedDate = editingTask.dueDate.split('T')[0];
+        }
+      }
       setFormData({
         ...editingTask,
+        dueDate: formattedDate,
         photo: null,
       });
       setPhotoPreview(editingTask.photo || null);

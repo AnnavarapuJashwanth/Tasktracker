@@ -76,9 +76,16 @@ function Tasks({ adminPin }) {
         }
         
         const pin = localStorage.getItem('adminPin');
+        // Use API_BASE_URL from api.js by checking environment
+        const isProduction = window.location.hostname !== 'localhost' && 
+                             window.location.hostname !== '127.0.0.1';
+        const baseUrl = isProduction 
+          ? 'https://tasktracker-4xm2.onrender.com/api'
+          : 'http://localhost:5000/api';
+        
         const url = editingTask 
-          ? `http://localhost:5000/api/tasks/update/${editingTask._id}`
-          : 'http://localhost:5000/api/tasks/create';
+          ? `${baseUrl}/tasks/update/${editingTask._id}`
+          : `${baseUrl}/tasks/create`;
         
         const response = await fetch(url, {
           method: editingTask ? 'PUT' : 'POST',
