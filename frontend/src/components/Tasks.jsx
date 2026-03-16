@@ -243,13 +243,19 @@ Thank you for your patience. For any queries, please contact us.`;
       // Get phone number from task or fetch from contacts
       let phoneNumber = task.assignedToPhone;
       
-      // If no phone stored, extract from assignedToContact (format: "Name (+phone)")
+      // If no phone stored, extract from assignedToContact (format: "Name (+919900842064)")
       if (!phoneNumber && task.assignedToContact) {
-        const phoneMatch = task.assignedToContact.match(/\+[\d\s\-\(\)]+/);
+        // Try to extract phone number enclosed in parentheses
+        const phoneMatch = task.assignedToContact.match(/\(\+[\d\s\-]+\)/);
         if (phoneMatch) {
-          phoneNumber = phoneMatch[0].replace(/[\s\-\(\)]/g, '');
+          // Remove all non-digit characters but keep the +
+          phoneNumber = phoneMatch[0].replace(/[^\d+]/g, '');
         }
       }
+      
+      // Log for debugging
+      console.log('Debug: assignedToContact =', task.assignedToContact);
+      console.log('Debug: Extracted phoneNumber =', phoneNumber);
 
       const response = await fetch(`${apiBaseURL}/tasks/${task._id}/acknowledge-link`, {
         method: 'POST',
