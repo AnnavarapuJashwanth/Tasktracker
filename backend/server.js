@@ -48,8 +48,12 @@ app.get('/api/health', (req, res) => {
 // Login endpoint
 app.post('/api/auth/login', (req, res) => {
   const { pin } = req.body;
+  const expectedPin = (process.env.ADMIN_PIN || '1234').trim();
+  const receivedPin = String(pin || '').trim();
+  
+  console.log('Login attempt - Expected PIN:', expectedPin, 'Received PIN:', receivedPin);
 
-  if (pin === process.env.ADMIN_PIN) {
+  if (receivedPin === expectedPin) {
     res.json({
       success: true,
       message: 'Login successful',

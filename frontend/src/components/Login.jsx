@@ -13,14 +13,26 @@ function Login({ onLogin }) {
     setLoading(true);
 
     try {
+      console.log('Sending PIN:', pin, 'Length:', pin.length, 'Type:', typeof pin);
+      
+      // Validate PIN format
+      if (!/^\d{4}$/.test(pin)) {
+        setError('PIN must be exactly 4 digits');
+        setLoading(false);
+        return;
+      }
+
       const response = await authAPI.login(pin);
+      console.log('Login response:', response.data);
+      
       if (response.data.success) {
         onLogin(pin);
       } else {
         setError(response.data.message || 'Login failed');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid PIN');
+      console.error('Login error details:', err);
+      setError(err.response?.data?.message || 'Invalid PIN - Check console for details');
     } finally {
       setLoading(false);
     }
