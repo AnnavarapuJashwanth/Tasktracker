@@ -111,6 +111,7 @@ function TaskForm({ onSubmit, onCancel, editingTask }) {
     if (!formData.title.trim()) newErrors.title = 'Title is required';
     if (!formData.description.trim()) newErrors.description = 'Description is required';
     if (!formData.dueDate) newErrors.dueDate = 'Due date is required';
+    if (!formData.referenceNumber.trim()) newErrors.referenceNumber = 'Reference number is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -331,7 +332,7 @@ function TaskForm({ onSubmit, onCancel, editingTask }) {
         {/* Reference Number */}
         <div>
           <label htmlFor="referenceNumber" className="block text-sm font-bold text-gray-700 uppercase mb-2">
-            📌 Reference Number (Optional)
+            📌 Reference Number <span className="text-red-600">*</span>
           </label>
           <input
             type="text"
@@ -342,6 +343,7 @@ function TaskForm({ onSubmit, onCancel, editingTask }) {
             placeholder="e.g., REF-2026-001, TICKET-12345"
             className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none text-gray-800"
           />
+          {errors.referenceNumber && <span className="text-red-600 text-sm font-semibold mt-1 block">⚠️ {errors.referenceNumber}</span>}
         </div>
 
         {/* Actions */}

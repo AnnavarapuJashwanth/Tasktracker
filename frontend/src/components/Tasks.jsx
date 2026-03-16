@@ -264,8 +264,6 @@ Thank you for your patience. For any queries, please contact us.`;
     // Format message with task details + image link
     let message = `📌 *TASK UPDATE*
 
-*Reference #:* ${task.referenceNumber || 'N/A'}
-
 *Task:* ${task.title}
 
 *Description:* ${task.description}
