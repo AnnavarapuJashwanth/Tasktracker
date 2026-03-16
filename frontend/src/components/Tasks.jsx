@@ -250,12 +250,31 @@ Thank you for your patience. For any queries, please contact us.`;
         if (phoneMatch) {
           // Remove all non-digit characters but keep the +
           phoneNumber = phoneMatch[0].replace(/[^\d+]/g, '');
+        } else {
+          // Fallback: if format is different, try to fetch from contacts endpoint
+          try {
+            const contactsResponse = await fetch(`${apiBaseURL}/contacts/all`, {
+              headers: { 'adminPin': pin }
+            });
+            if (contactsResponse.ok) {
+              const contacts = await contactsResponse.json();
+              const matched = contacts.find(c => 
+                c.name && task.assignedToContact && 
+                (c.name === task.assignedToContact || 
+                 task.assignedToContact.includes(c.name))
+              );
+              if (matched && matched.phone) {
+                phoneNumber = matched.phone.replace(/[^\d+]/g, '');
+              }
+            }
+          } catch (err) {
+            console.warn('Could not fetch contacts:', err);
+          }
         }
       }
       
-      // Log for debugging
       console.log('Debug: assignedToContact =', task.assignedToContact);
-      console.log('Debug: Extracted phoneNumber =', phoneNumber);
+      console.log('Debug: Final phoneNumber =', phoneNumber);
 
       const response = await fetch(`${apiBaseURL}/tasks/${task._id}/acknowledge-link`, {
         method: 'POST',
