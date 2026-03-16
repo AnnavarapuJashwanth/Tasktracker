@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// Use environment variable if available, otherwise default to localhost for development
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+console.log('API Base URL:', API_BASE_URL); // Debug log
 
 const getAuthHeader = () => {
   const pin = localStorage.getItem('adminPin');
