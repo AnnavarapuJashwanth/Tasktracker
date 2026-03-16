@@ -22,9 +22,10 @@ function Dashboard({ adminPin }) {
 
   const loadStats = async () => {
     try {
-      const pin = localStorage.getItem('adminPin');
+      // Use the passed adminPin prop instead of checking localStorage
+      const pin = adminPin || localStorage.getItem('adminPin');
       if (!pin) {
-        setError('Not authenticated. Please login again.');
+        console.warn('No PIN found, may not be authenticated');
         setLoading(false);
         return;
       }
@@ -51,7 +52,12 @@ function Dashboard({ adminPin }) {
       setLoading(false);
     } catch (err) {
       console.error('Stats error:', err);
-      setError('Failed to load statistics. Please try again.');
+      // Check if it's an authentication error
+      if (err.response?.status === 401) {
+        setError('Not authenticated. Please login again.');
+      } else {
+        setError('Failed to load statistics. Please try again.');
+      }
       setLoading(false);
     }
   };
