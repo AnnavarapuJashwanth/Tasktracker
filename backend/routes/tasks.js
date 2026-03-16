@@ -257,6 +257,116 @@ router.get('/:id', adminAuth, async (req, res) => {
 });
 
 // Error handler middleware for multer and other errors
+// Generate acknowledgement link for task
+router.post('/:taskId/acknowledge-link', adminAuth, async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.taskId);
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    // Generate unique token
+    const crypto = await import('crypto');
+    const token = crypto.randomBytes(32).toString('hex');
+    
+    // Set token expiry to 30 days from now
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 30);
+
+    task.acknowledgementToken = token;
+    task.acknowledgementTokenExpiry = expiryDate;
+    await task.save();
+
+    // Generate full URL (handle both localhost and production)
+    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const acknowledgementUrl = `${baseUrl}/acknowledge/${req.params.taskId}/${token}`;
+
+    res.json({ 
+      message: 'Acknowledgement link generated successfully',
+      acknowledgementUrl,
+      token,
+      expiryDate
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error generating acknowledgement link', error: error.message });
+  }
+});
+
+// Get task details for acknowledgement (public endpoint - no auth needed)
+router.get('/acknowledge/:token', async (req, res) => {
+  try {
+    const task = await Task.findOne({ 
+      acknowledgementToken: req.params.token,
+      acknowledgementTokenExpiry: { $gt: new Date() }
+    });
+
+    if (!task) {
+      return res.status(404).json({ message: 'Invalid or expired acknowledgement link' });
+    }
+
+    // Return task details (minimal info for public view)
+    res.json({
+      _id: task._id,
+      title: task.title,
+      description: task.description,
+      priority: task.priority,
+      sector: task.sector,
+      dueDate: task.dueDate,
+      assignedToContact: task.assignedToContact,
+      status: task.status,
+      photo: task.photo
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error retrieving task', error: error.message });
+  }
+});
+
+// Mark task as complete via acknowledgement link (public endpoint - no auth needed)
+router.post('/acknowledge/:token/complete', async (req, res) => {
+  try {
+    const task = await Task.findOne({ 
+      acknowledgementToken: req.params.token,
+      acknowledgementTokenExpiry: { $gt: new Date() }
+    });
+
+    if (!task) {
+      return res.status(404).json({ message: 'Invalid or expired acknowledgement link' });
+    }
+
+    if (task.status === 'Completed') {
+      return res.json({ message: 'Task is already marked as complete', task });
+    }
+
+    // Update task status
+    task.status = 'Completed';
+    task.acknowledgedAt = new Date();
+    
+    // Calculate duration if startTime exists
+    if (task.startTime) {
+      const durationMs = new Date() - task.startTime;
+      const hours = Math.floor(durationMs / 3600000);
+      const minutes = Math.floor((durationMs % 3600000) / 60000);
+      const seconds = Math.floor((durationMs % 60000) / 1000);
+      task.duration = `${hours}h ${minutes}m ${seconds}s`;
+    }
+
+    task.updatedAt = new Date();
+    await task.save();
+
+    res.json({ 
+      message: 'Task marked as complete successfully', 
+      task: {
+        _id: task._id,
+        title: task.title,
+        status: task.status,
+        acknowledgedAt: task.acknowledgedAt
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error completing task', error: error.message });
+  }
+});
+
 router.use((err, req, res, next) => {
   if (err) {
     console.error('Route error:', err.message);

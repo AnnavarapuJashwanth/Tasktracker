@@ -5,12 +5,16 @@ import Dashboard from './components/Dashboard';
 import Tasks from './components/Tasks';
 import Contacts from './components/Contacts';
 import Settings from './components/Settings';
+import TaskAcknowledgement from './components/TaskAcknowledgement';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [adminPin, setAdminPin] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Check if we're on acknowledgement page
+  const isAcknowledgementPage = window.location.pathname.startsWith('/acknowledge/');
 
   useEffect(() => {
     const savedPin = localStorage.getItem('adminPin');
@@ -38,6 +42,11 @@ function App() {
     setActiveTab(tab);
     setSidebarOpen(false); // Close sidebar on mobile when tab is clicked
   };
+
+  // Show acknowledgement page if URL matches the pattern
+  if (isAcknowledgementPage) {
+    return <TaskAcknowledgement />;
+  }
 
   // If not logged in, show login page only
   if (!isLoggedIn) {

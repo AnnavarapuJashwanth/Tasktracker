@@ -73,6 +73,18 @@ const taskSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  acknowledgementToken: {
+    type: String,
+    default: null,
+  },
+  acknowledgementTokenExpiry: {
+    type: Date,
+    default: null,
+  },
+  acknowledgedAt: {
+    type: Date,
+    default: null,
+  },
   createdBy: {
     type: String,
     required: true,
