@@ -40,7 +40,22 @@ app.use(cors({
 console.log('✅ CORS enabled for origins:', allowedOrigins);
 
 // Static file serving for uploads
-app.use('/uploads', express.static('uploads'));
+// Configure express.static with proper cache and encoding handling
+app.use('/uploads', express.static('uploads', {
+  maxAge: '7d',  // Cache for 7 days
+  etag: true,    // Enable ETag for file versioning
+  setHeaders: (res, path) => {
+    // Disable caching for HTML files
+    if (path.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+    // Allow proper MIME types
+    if (path.endsWith('.png')) res.setHeader('Content-Type', 'image/png');
+    if (path.endsWith('.jpg') || path.endsWith('.jpeg')) res.setHeader('Content-Type', 'image/jpeg');
+    if (path.endsWith('.gif')) res.setHeader('Content-Type', 'image/gif');
+    if (path.endsWith('.webp')) res.setHeader('Content-Type', 'image/webp');
+  }
+}));
 
 // Connect to MongoDB
 connectDB();

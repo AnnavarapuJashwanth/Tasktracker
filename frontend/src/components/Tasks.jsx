@@ -249,6 +249,20 @@ function Tasks({ adminPin }) {
     const task = tasks.find((t) => t._id === taskId);
     if (!task) return;
 
+    // Helper function to construct photo URL with proper encoding
+    const getPhotoUrl = (photoPath) => {
+      if (!photoPath) return '';
+      if (photoPath.startsWith('http')) return photoPath;
+      
+      const backendUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:5000'
+        : 'https://tasktracker-4xm2.onrender.com';
+      
+      // Properly encode the path (handle spaces and special characters)
+      const encodedPath = photoPath.split('/').map(part => encodeURIComponent(part)).join('/');
+      return `${backendUrl}${encodedPath}`;
+    };
+
     // Format message with task details + image note
     let message = `📌 *TASK UPDATE*
 
@@ -264,14 +278,19 @@ function Tasks({ adminPin }) {
 
     // Add photo URL if task has photo
     if (task.photo) {
-      const photoUrl = task.photo.startsWith('http') 
-        ? task.photo 
-        : `http://localhost:5000${task.photo}`;
+      const photoUrl = getPhotoUrl(task.photo);
       message += `
 
 📎 *ATTACHMENT:* Task Photo
 ${photoUrl}`;
     }
+
+    // Store task with processed photo URL
+    setSelectedTaskForMessage({ ...task, processedPhotoUrl: task.photo ? getPhotoUrl(task.photo) : null });
+    setEditableMessage(message);
+    setSelectedPhoneForMessage(phoneNumber);
+    setShowMessageModal(true);
+  };
 
     // Store task and show message preview modal
     setSelectedTaskForMessage(task);
@@ -499,14 +518,18 @@ ${photoUrl}`;
               </div>
 
               {/* Task Image Preview (if exists) */}
-              {selectedTaskForMessage?.photo && (
+              {selectedTaskForMessage?.processedPhotoUrl && (
                 <div className="space-y-2">
                   <p className="text-sm font-semibold text-gray-700">📎 Task Photo</p>
                   <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
                     <img
-                      src={selectedTaskForMessage.photo}
+                      src={selectedTaskForMessage.processedPhotoUrl}
                       alt="Task"
                       className="w-full max-h-40 object-cover rounded-lg"
+                      onError={(e) => {
+                        console.error('Photo preview failed to load:', selectedTaskForMessage.processedPhotoUrl);
+                        e.target.src = 'https://via.placeholder.com/400x200?text=Photo+Not+Found';
+                      }}
                     />
                   </div>
                   <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg">
