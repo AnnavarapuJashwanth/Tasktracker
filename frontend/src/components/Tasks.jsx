@@ -63,33 +63,49 @@ function Tasks({ adminPin }) {
 
   const handleCreateTask = async (formData) => {
     try {
+      const pin = localStorage.getItem('adminPin');
+      const apiBaseURL = (typeof window !== 'undefined') && (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
+        ? 'https://tasktracker-4xm2.onrender.com/api'
+        : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
+      
+      let response;
+      
       if (formData.photo && formData.photo instanceof File) {
-        // If photo is a File object, we need to use FormData with fetch
+        // Use FormData for file uploads
         const fd = new FormData();
-        for (const key in formData) {
-          if (key !== 'photo' || formData.photo) {
-            fd.append(key, formData[key]);
-          }
-        }
         
-        const pin = localStorage.getItem('adminPin');
+        // Append all form data
+        fd.append('title', formData.title);
+        fd.append('description', formData.description);
+        fd.append('priority', formData.priority);
+        fd.append('category', formData.category);
+        fd.append('sector', formData.sector);
+        fd.append('dueDate', formData.dueDate);
+        fd.append('referencePhone', formData.referencePhone);
+        fd.append('referenceNumber', formData.referenceNumber);
+        fd.append('assignedToContactId', formData.assignedToContactId);
+        fd.append('assignedToContact', formData.assignedToContact);
+        fd.append('photo', formData.photo); // Append the file
         
-        // Import and use the API_BASE_URL from api.js by making request
-        try {
-          if (editingTask) {
-            await tasksAPI.updateTask(editingTask._id, formData);
-            setSuccessMessage('Task updated successfully');
-            setEditingTask(null);
-          } else {
-            await tasksAPI.createTask(formData);
-            setSuccessMessage('Task created successfully');
-          }
-        } catch (photoErr) {
-          console.error('Photo API error:', photoErr);
-          throw photoErr;
+        if (editingTask) {
+          response = await fetch(`${apiBaseURL}/tasks/update/${editingTask._id}`, {
+            method: 'PUT',
+            headers: {
+              'adminPin': pin,
+            },
+            body: fd,
+          });
+        } else {
+          response = await fetch(`${apiBaseURL}/tasks/create`, {
+            method: 'POST',
+            headers: {
+              'adminPin': pin,
+            },
+            body: fd,
+          });
         }
       } else {
-        // If no photo or photo is a URL string, use API with JSON
+        // Use JSON for requests without files
         if (editingTask) {
           const updateData = {...formData};
           if (updateData.photo === null) {
@@ -102,6 +118,17 @@ function Tasks({ adminPin }) {
           await tasksAPI.createTask(formData);
           setSuccessMessage('Task created successfully');
         }
+      }
+      
+      if (formData.photo && formData.photo instanceof File) {
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        }
+        
+        setSuccessMessage(editingTask ? 'Task updated successfully' : 'Task created successfully');
+        setEditingTask(null);
       }
       
       setShowForm(false);
@@ -235,11 +262,15 @@ function Tasks({ adminPin }) {
 *Due Date:* ${new Date(task.dueDate).toLocaleDateString()}
 *Sector:* ${task.sector}`;
 
-    // Add image note if task has photo
+    // Add photo URL if task has photo
     if (task.photo) {
+      const photoUrl = task.photo.startsWith('http') 
+        ? task.photo 
+        : `http://localhost:5000${task.photo}`;
       message += `
 
-📎 *ATTACHMENT:* Task Photo (See below or in task details)`;
+📎 *ATTACHMENT:* Task Photo
+${photoUrl}`;
     }
 
     // Store task and show message preview modal

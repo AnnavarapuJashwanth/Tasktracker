@@ -1,5 +1,6 @@
 import express from 'express';
 import Task from '../models/Task.js';
+import upload from '../middleware/upload.js';
 
 const router = express.Router();
 
@@ -20,11 +21,23 @@ const adminAuth = (req, res, next) => {
 };
 
 // Create task
-router.post('/create', adminAuth, async (req, res) => {
+router.post('/create', adminAuth, upload.single('photo'), async (req, res) => {
   try {
+    // Check for multer errors
+    if (req.file && req.file.error) {
+      return res.status(400).json({ message: 'File upload error', error: req.file.error });
+    }
+    
     const { title, description, priority, category, sector, dueDate, referencePhone, referenceNumber, assignedToContactId, assignedToContact } = req.body;
 
     console.log('Creating task with:', { title, description, priority, category, sector, dueDate, referencePhone, referenceNumber, assignedToContactId, assignedToContact });
+    console.log('File uploaded:', req.file ? req.file.filename : 'No file');
+
+    let photoUrl = null;
+    if (req.file) {
+      // Store the relative path/URL for the photo
+      photoUrl = `/uploads/${req.file.filename}`;
+    }
 
     const task = new Task({
       title,
@@ -37,6 +50,7 @@ router.post('/create', adminAuth, async (req, res) => {
       referenceNumber,
       assignedToContactId,
       assignedToContact,
+      photo: photoUrl, // Store the photo URL instead of base64
       createdBy: 'admin',
     });
 
@@ -47,6 +61,18 @@ router.post('/create', adminAuth, async (req, res) => {
     console.log('Error creating task:', error.message);
     res.status(500).json({ message: 'Error creating task', error: error.message });
   }
+}, (err, req, res, next) => {
+  // Multer error handler
+  if (err) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ message: 'File too large. Maximum size is 10MB' });
+    }
+    if (err.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({ message: 'Too many files' });
+    }
+    return res.status(400).json({ message: 'File upload error', error: err.message });
+  }
+  next();
 });
 
 // Get all tasks
@@ -87,7 +113,7 @@ router.get('/stats', adminAuth, async (req, res) => {
 });
 
 // Update task status
-router.put('/update/:id', adminAuth, async (req, res) => {
+router.put('/update/:id', adminAuth, upload.single('photo'), async (req, res) => {
   try {
     const { status, startTime, endTime, title, description, priority, category, sector, dueDate, referencePhone, referenceNumber, assignedToContactId, assignedToContact, photo } = req.body;
     const task = await Task.findById(req.params.id);
@@ -107,7 +133,13 @@ router.put('/update/:id', adminAuth, async (req, res) => {
     if (referenceNumber !== undefined) task.referenceNumber = referenceNumber;
     if (assignedToContactId !== undefined) task.assignedToContactId = assignedToContactId;
     if (assignedToContact !== undefined) task.assignedToContact = assignedToContact;
-    if (photo !== undefined) task.photo = photo;
+    
+    // Handle photo: if new file was uploaded, use it; otherwise use provided value
+    if (req.file) {
+      task.photo = `/uploads/${req.file.filename}`;
+    } else if (photo !== undefined) {
+      task.photo = photo;
+    }
 
     // Handle status changes with timing logic
     if (status) {
@@ -134,6 +166,18 @@ router.put('/update/:id', adminAuth, async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Error updating task', error: error.message });
   }
+}, (err, req, res, next) => {
+  // Multer error handler
+  if (err) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ message: 'File too large. Maximum size is 10MB' });
+    }
+    if (err.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({ message: 'Too many files' });
+    }
+    return res.status(400).json({ message: 'File upload error', error: err.message });
+  }
+  next();
 });
 
 // Assign task

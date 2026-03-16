@@ -10,3 +10,6 @@ dist/
 build/
 .DS_Store
 .env
+# Ignore uploaded files but keep the directory structure
+uploads/*
+!uploads/.gitkeep

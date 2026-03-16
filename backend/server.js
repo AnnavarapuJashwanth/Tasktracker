@@ -38,6 +38,9 @@ app.use(cors({
 // Log allowed origins for debugging
 console.log('✅ CORS enabled for origins:', allowedOrigins);
 
+// Static file serving for uploads
+app.use('/uploads', express.static('uploads'));
+
 // Connect to MongoDB
 connectDB();
 
