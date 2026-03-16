@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import connectDB from './config/db.js';
+import connectDB, { getDBStatus } from './config/db.js';
 import authRoutes from './routes/auth.js';
 import tasksRoutes from './routes/tasks.js';
 import contactsRoutes from './routes/contacts.js';
@@ -70,7 +70,13 @@ app.get('/', (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ message: 'Server is running' });
+  const dbStatus = getDBStatus();
+  res.json({ 
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+    database: dbStatus,
+    status: dbStatus.connected ? 'ONLINE' : 'OFFLINE'
+  });
 });
 
 // Login endpoint
