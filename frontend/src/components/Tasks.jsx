@@ -199,9 +199,8 @@ function Tasks({ adminPin }) {
     // Create citizen message with reference number/assigned contact and subject
     const citizenMessage = `🔔 *CITIZEN NOTIFICATION*
 
-*Reference:* ${reference}
-
-*Subject:* ${task.title}
+*Reference #:* ${task.referenceNumber || 'N/A'}
+*Task:* ${task.title}
 
 *Description:* ${task.description}
 
@@ -270,19 +269,29 @@ function Tasks({ adminPin }) {
 
 *Description:* ${task.description}
 
-*Reference:* ${task.assignedTo || 'To be assigned'}
+*Reference #:* ${task.referenceNumber || 'N/A'}
+*Assigned To:* ${task.assignedToContact || 'To be assigned'}
 *Status:* ${task.status}
 *Priority:* ${task.priority}
 *Due Date:* ${new Date(task.dueDate).toLocaleDateString()}
 *Sector:* ${task.sector}`;
 
-    // Add photo URL if task has photo
+    // Add photo URL if task has photo - include as clickable reference
     if (task.photo) {
       const photoUrl = getPhotoUrl(task.photo);
       message += `
 
-📎 *ATTACHMENT:* Task Photo
-${photoUrl}`;
+📸 *VIEW TASK PHOTO:*
+${photoUrl}
+
+💡 *To attach this photo to WhatsApp:*
+1. Copy the link above
+2. After opening WhatsApp, click Attachment (📎)
+3. Paste the link or send directly`;
+    } else {
+      message += `
+
+💡 *Tip:* This task has no photo attached`;
     }
 
     // Store task with processed photo URL
