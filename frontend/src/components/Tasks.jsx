@@ -236,8 +236,15 @@ Thank you for your patience. For any queries, please contact us.`;
 
   // NEW: Handle automatic Assign button click
   const handleAssignClick = (task) => {
-    // Generate acknowledgement link and send WhatsApp message with it
-    generateAcknowledgementLink(task);
+    // If task doesn't have assigned phone, ask user to enter it
+    if (!task.assignedToPhone || task.assignedToPhone.trim() === '') {
+      setSelectedTaskForAssign(task);
+      setPhoneInputModal(true);
+      setInputPhone('');
+    } else {
+      // Generate acknowledgement link and send WhatsApp message with it
+      generateAcknowledgementLink(task);
+    }
   };
 
   // Generate acknowledgement link
@@ -312,17 +319,21 @@ Please click the link above to mark this task as complete when done. Thank you!`
     }
   };
 
-  // NEW: Handle phone input and auto-open
+  // NEW: Handle phone input and generate acknowledgement link
   const handlePhoneInputSubmit = () => {
     if (!inputPhone.trim()) {
       setError('Please enter a valid phone number');
       return;
     }
     
-    handleOpenWhatsApp(inputPhone, selectedTaskForAssign._id);
+    // Update task with phone number and generate acknowledgement link
+    if (selectedTaskForAssign) {
+      selectedTaskForAssign.assignedToPhone = inputPhone.trim();
+      generateAcknowledgementLink(selectedTaskForAssign);
+    }
+    
     setPhoneInputModal(false);
     setInputPhone('');
-    setSelectedTaskForAssign(null);
   };
 
   const handleOpenWhatsApp = (phoneNumber, taskId) => {
@@ -480,12 +491,12 @@ ${photoUrl}`;
         </div>
       )}
 
-      {/* Phone Input Modal - NEW */}
+      {/* Phone Input Modal - for Task Assignment */}
       {phoneInputModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
-            <div className="flex justify-between items-center p-6 border-b-2 border-gray-200 bg-gradient-to-r from-purple-50 to-blue-50">
-              <h3 className="text-2xl font-bold text-gray-800">Add WhatsApp Number</h3>
+            <div className="flex justify-between items-center p-6 border-b-2 border-gray-200 bg-gradient-to-r from-green-50 to-blue-50">
+              <h3 className="text-2xl font-bold text-gray-800">📱 Assign Task - Enter WhatsApp Number</h3>
               <button
                 onClick={() => {
                   setPhoneInputModal(false);
@@ -500,7 +511,7 @@ ${photoUrl}`;
 
             <div className="p-6 space-y-4">
               <p className="text-gray-600">
-                Enter the WhatsApp number for:
+                Enter the WhatsApp number to assign this task to:
                 <span className="font-bold text-gray-900"> {selectedTaskForAssign?.title}</span>
               </p>
 
@@ -534,9 +545,10 @@ ${photoUrl}`;
               </button>
               <button
                 onClick={handlePhoneInputSubmit}
-                className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors"
+                className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors"
               >
-                Continue
+                ✅ Generate Link & Send
+              </button>
               </button>
             </div>
           </div>
