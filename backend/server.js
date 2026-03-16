@@ -13,7 +13,19 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+
+// CORS configuration - allow both local and production
+app.use(cors({
+  origin: [
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'https://tasktracker4297.netlify.app',
+    'https://tasktracker-4xm2.onrender.com'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'adminPin', 'admin-pin']
+}));
 
 // Connect to MongoDB
 connectDB();
