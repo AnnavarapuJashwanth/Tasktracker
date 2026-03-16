@@ -193,10 +193,10 @@ function Tasks({ adminPin }) {
       return;
     }
 
-    // Create formal grievance/task update message with reference number
+    // Create formal grievance/task update message with citizen's phone as reference
     let citizenMessage = `📋 *GRIEVANCE UPDATE*
 
-*Reference #:* ${task.referenceNumber || 'N/A'}
+*Reference #:* ${task.referencePhone}
 
 *Subject:* ${task.title}
 
