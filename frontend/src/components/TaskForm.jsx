@@ -76,7 +76,6 @@ function TaskForm({ onSubmit, onCancel, editingTask }) {
       ...prev,
       assignedToContactId: contactId,
       assignedToContact: selectedContact ? selectedContact.name : '',
-      referencePhone: selectedContact ? selectedContact.phone : '',
     }));
   };
 
@@ -111,6 +110,7 @@ function TaskForm({ onSubmit, onCancel, editingTask }) {
     if (!formData.title.trim()) newErrors.title = 'Title is required';
     if (!formData.description.trim()) newErrors.description = 'Description is required';
     if (!formData.dueDate) newErrors.dueDate = 'Due date is required';
+    if (!formData.referencePhone.trim()) newErrors.referencePhone = 'Citizen WhatsApp phone is required';
     if (!formData.referenceNumber.trim()) newErrors.referenceNumber = 'Reference number is required';
 
     setErrors(newErrors);
@@ -327,6 +327,24 @@ function TaskForm({ onSubmit, onCancel, editingTask }) {
             />
             {errors.dueDate && <span className="text-red-600 text-sm font-semibold mt-1 block">⚠️ {errors.dueDate}</span>}
           </div>
+        </div>
+
+        {/* Citizen Phone - For WhatsApp Notifications */}
+        <div>
+          <label htmlFor="referencePhone" className="block text-sm font-bold text-gray-700 uppercase mb-2">
+            <FaPhone className="inline mr-2" />
+            Citizen WhatsApp Phone <span className="text-red-600">*</span>
+          </label>
+          <input
+            type="tel"
+            id="referencePhone"
+            name="referencePhone"
+            value={formData.referencePhone}
+            onChange={handleChange}
+            placeholder="e.g., +919876543210"
+            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none text-gray-800"
+          />
+          {errors.referencePhone && <span className="text-red-600 text-sm font-semibold mt-1 block">⚠️ {errors.referencePhone}</span>}
         </div>
 
         {/* Reference Number */}
