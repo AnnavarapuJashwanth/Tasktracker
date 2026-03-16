@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
 import { FaCheck, FaExclamationTriangle, FaArrowLeft } from 'react-icons/fa';
 
 function TaskAcknowledgement() {
-  const { taskId, token } = useParams();
+  // Extract taskId and token from URL: /acknowledge/taskId/token
+  const pathParts = window.location.pathname.split('/').filter(Boolean);
+  const taskId = pathParts[1];
+  const token = pathParts[2];
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
