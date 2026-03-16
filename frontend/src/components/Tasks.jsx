@@ -221,7 +221,7 @@ Thank you for your patience. For any queries, please contact us.`;
 
   // NEW: Handle automatic Assign button click
   const handleAssignClick = (task) => {
-    // Generate acknowledgement link first
+    // Generate acknowledgement link and send WhatsApp message with it
     generateAcknowledgementLink(task);
   };
 
@@ -248,10 +248,35 @@ Thank you for your patience. For any queries, please contact us.`;
       }
 
       const data = await response.json();
-      setAcknowledgementLink(data.acknowledgementUrl);
+      const acknowledgementUrl = data.acknowledgementUrl;
+      setAcknowledgementLink(acknowledgementUrl);
       setSelectedTaskForAssign(task);
-      setShowAcknowledgementModal(true);
-      setSuccessMessage('✅ Acknowledgement link generated successfully!');
+
+      // Create WhatsApp message with the acknowledgement link
+      let assignMessage = `✅ *TASK ASSIGNED*
+
+*Task:* ${task.title}
+
+*Description:* ${task.description}
+
+*Status:* ${task.status}
+*Priority:* ${task.priority}
+*Due Date:* ${new Date(task.dueDate).toLocaleDateString()}
+*Sector:* ${task.sector}
+
+🔗 *TASK CONFIRMATION LINK:*
+${acknowledgementUrl}
+
+${task.assignedToContact ? `*Assigned to:* ${task.assignedToContact}` : ''}
+
+Please click the link above to mark this task as complete when done. Thank you!`;
+
+      // Show the message modal to send via WhatsApp
+      setEditableMessage(assignMessage);
+      setSelectedPhoneForMessage(task.assignedToPhone || '');
+      setShowMessageModal(true);
+
+      setSuccessMessage('✅ Acknowledgement link generated! Ready to send via WhatsApp...');
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       console.error('Error generating link:', err);
@@ -272,12 +297,6 @@ Thank you for your patience. For any queries, please contact us.`;
     setPhoneInputModal(false);
     setInputPhone('');
     setSelectedTaskForAssign(null);
-  };
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(acknowledgementLink);
-    setSuccessMessage('📋 Acknowledgement link copied to clipboard!');
-    setTimeout(() => setSuccessMessage(''), 3000);
   };
 
   const handleOpenWhatsApp = (phoneNumber, taskId) => {
@@ -508,68 +527,6 @@ ${photoUrl}`;
               >
                 Continue
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Acknowledgement Link Modal - NEW */}
-      {showAcknowledgementModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full">
-            <div className="flex justify-between items-center p-6 border-b-2 border-gray-200 bg-gradient-to-r from-green-50 to-blue-50">
-              <h3 className="text-2xl font-bold text-gray-800">✅ Acknowledgement Link Generated</h3>
-              <button
-                onClick={() => {
-                  setShowAcknowledgementModal(false);
-                  setAcknowledgementLink('');
-                }}
-                className="text-2xl text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <p className="text-gray-700">
-                Task: <span className="font-bold">{selectedTaskForAssign?.title}</span>
-              </p>
-              <p className="text-gray-600 text-sm">
-                Share this link with the assigned person. They can open the link and click "Mark Task Complete" to confirm completion.
-              </p>
-
-              {/* Link Copy Section */}
-              <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4">
-                <p className="text-sm text-gray-600 font-semibold mb-2">Acknowledgement Link:</p>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={acknowledgementLink}
-                    readOnly
-                    className="flex-1 px-4 py-2 bg-white border-2 border-gray-300 rounded-lg text-sm text-blue-600 focus:outline-none"
-                  />
-                  <button
-                    onClick={handleCopyLink}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
-                  >
-                    📋 Copy
-                  </button>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">Link expires in 30 days</p>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-4 pt-4">
-                <button
-                  onClick={() => {
-                    setShowAcknowledgementModal(false);
-                    setAcknowledgementLink('');
-                  }}
-                  className="flex-1 px-4 py-3 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold rounded-lg transition-colors"
-                >
-                  Done
-                </button>
-              </div>
             </div>
           </div>
         </div>
