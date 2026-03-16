@@ -5,6 +5,22 @@ import SessionTimer from './SessionTimer';
 function TaskCard({ task, onStart, onComplete, onDelete, onCitizen, onAssign, onEdit, isActive }) {
   const [showTimer, setShowTimer] = useState(isActive);
 
+  const getPhotoUrl = (photoPath) => {
+    if (!photoPath) return '';
+    
+    // If it's already a full URL, return as is
+    if (photoPath.startsWith('http')) {
+      return photoPath;
+    }
+    
+    // If it's a relative path, construct the full URL
+    const backendUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'http://localhost:5000'
+      : 'https://tasktracker-4xm2.onrender.com';
+    
+    return `${backendUrl}${photoPath}`;
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'Completed':
@@ -100,9 +116,13 @@ function TaskCard({ task, onStart, onComplete, onDelete, onCitizen, onAssign, on
       {task.photo && (
         <div className="px-6 py-3 bg-gray-50 border-b">
           <img
-            src={task.photo}
+            src={getPhotoUrl(task.photo)}
             alt={task.title}
             className="w-full h-40 object-cover rounded-lg"
+            onError={(e) => {
+              console.error('Image failed to load:', task.photo);
+              e.target.src = 'https://via.placeholder.com/300x200?text=Photo+Not+Found';
+            }}
           />
         </div>
       )}

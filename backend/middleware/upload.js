@@ -19,9 +19,16 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     // Create unique filename: timestamp-randomstring-originalname
+    // Sanitize filename - remove spaces and special characters
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const ext = path.extname(file.originalname);
-    const name = path.basename(file.originalname, ext);
+    let name = path.basename(file.originalname, ext);
+    
+    // Replace spaces and special characters with hyphens
+    name = name.replace(/[^a-zA-Z0-9_-]/g, '-').replace(/-+/g, '-').toLowerCase();
+    // Remove leading/trailing hyphens
+    name = name.replace(/^-+|-+$/g, '');
+    
     cb(null, `${name}-${uniqueSuffix}${ext}`);
   },
 });
