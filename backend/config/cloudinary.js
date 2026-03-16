@@ -1,7 +1,14 @@
 import cloudinary from 'cloudinary';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-dotenv.config();
+// Get the directory path for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load .env file explicitly from backend directory
+dotenv.config({ path: path.join(__dirname, '../.env') });
 
 // Configure Cloudinary with credentials from .env
 const cloudinaryConfig = {

@@ -1,13 +1,21 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import connectDB, { getDBStatus } from './config/db.js';
 import authRoutes from './routes/auth.js';
 import tasksRoutes from './routes/tasks.js';
 import contactsRoutes from './routes/contacts.js';
 import whatsappRoutes from './routes/whatsapp.js';
 
-dotenv.config();
+// Get the directory path for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load .env file explicitly from backend directory
+dotenv.config({ path: path.join(__dirname, '.env') });
+console.log('📁 Loading .env from:', path.join(__dirname, '.env'));
 
 const app = express();
 
