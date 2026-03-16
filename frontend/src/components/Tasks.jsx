@@ -263,11 +263,12 @@ function Tasks({ adminPin }) {
     // Format message with task details + image link
     let message = `📌 *TASK UPDATE*
 
+*Reference #:* ${task.referenceNumber || 'N/A'}
+
 *Task:* ${task.title}
 
 *Description:* ${task.description}
 
-*Reference #:* ${task.referenceNumber || 'N/A'}
 *Assigned To:* ${task.assignedToContact || 'To be assigned'}
 *Status:* ${task.status}
 *Priority:* ${task.priority}
