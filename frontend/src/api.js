@@ -1,9 +1,23 @@
 import axios from 'axios';
 
-// Use environment variable if available, otherwise default to localhost for development
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+// Determine API URL based on environment
+let API_BASE_URL;
 
-console.log('API Base URL:', API_BASE_URL); // Debug log
+// Check if we're in production (Netlify deployment)
+const isProduction = window.location.hostname !== 'localhost' && 
+                     window.location.hostname !== '127.0.0.1';
+
+if (isProduction) {
+  // Production - use Render backend
+  API_BASE_URL = 'https://tasktracker-4xm2.onrender.com/api';
+} else {
+  // Local development - use localhost
+  API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+}
+
+console.log('Environment:', isProduction ? 'PRODUCTION' : 'DEVELOPMENT');
+console.log('API Base URL:', API_BASE_URL);
+console.log('Hostname:', window.location.hostname);
 
 const getAuthHeader = () => {
   const pin = localStorage.getItem('adminPin');
