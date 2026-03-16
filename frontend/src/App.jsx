@@ -143,7 +143,7 @@ function App() {
         {activeTab === 'dashboard' && <Dashboard adminPin={adminPin} />}
         {activeTab === 'tasks' && <Tasks adminPin={adminPin} />}
         {activeTab === 'contacts' && <Contacts />}
-        {activeTab === 'settings' && <Settings /></}
+        {activeTab === 'settings' && <Settings />}
       </main>
     </div>
   );
