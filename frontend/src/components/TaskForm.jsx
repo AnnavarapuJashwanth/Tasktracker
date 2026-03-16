@@ -10,7 +10,6 @@ function TaskForm({ onSubmit, onCancel, editingTask }) {
     category: 'Request',
     sector: 'Vignan University',
     dueDate: '',
-    referencePhone: '',
     referenceNumber: '',
     assignedToContactId: '',
     assignedToContact: '',
@@ -110,8 +109,7 @@ function TaskForm({ onSubmit, onCancel, editingTask }) {
     if (!formData.title.trim()) newErrors.title = 'Title is required';
     if (!formData.description.trim()) newErrors.description = 'Description is required';
     if (!formData.dueDate) newErrors.dueDate = 'Due date is required';
-    if (!formData.referencePhone.trim()) newErrors.referencePhone = 'Citizen WhatsApp phone is required';
-    if (!formData.referenceNumber.trim()) newErrors.referenceNumber = 'Reference number is required';
+    if (!formData.referenceNumber.trim()) newErrors.referenceNumber = 'Citizen WhatsApp phone is required';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -329,36 +327,19 @@ function TaskForm({ onSubmit, onCancel, editingTask }) {
           </div>
         </div>
 
-        {/* Citizen Phone - For WhatsApp Notifications */}
+        {/* Citizen WhatsApp Phone - For Notifications */}
         <div>
-          <label htmlFor="referencePhone" className="block text-sm font-bold text-gray-700 uppercase mb-2">
+          <label htmlFor="referenceNumber" className="block text-sm font-bold text-gray-700 uppercase mb-2">
             <FaPhone className="inline mr-2" />
             Citizen WhatsApp Phone <span className="text-red-600">*</span>
           </label>
           <input
             type="tel"
-            id="referencePhone"
-            name="referencePhone"
-            value={formData.referencePhone}
-            onChange={handleChange}
-            placeholder="e.g., +919876543210"
-            className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none text-gray-800"
-          />
-          {errors.referencePhone && <span className="text-red-600 text-sm font-semibold mt-1 block">⚠️ {errors.referencePhone}</span>}
-        </div>
-
-        {/* Reference Number */}
-        <div>
-          <label htmlFor="referenceNumber" className="block text-sm font-bold text-gray-700 uppercase mb-2">
-            📌 Reference Number <span className="text-red-600">*</span>
-          </label>
-          <input
-            type="text"
             id="referenceNumber"
             name="referenceNumber"
             value={formData.referenceNumber}
             onChange={handleChange}
-            placeholder="e.g., REF-2026-001, TICKET-12345"
+            placeholder="e.g., +919876543210"
             className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none text-gray-800"
           />
           {errors.referenceNumber && <span className="text-red-600 text-sm font-semibold mt-1 block">⚠️ {errors.referenceNumber}</span>}

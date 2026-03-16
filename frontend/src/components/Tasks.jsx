@@ -188,12 +188,12 @@ function Tasks({ adminPin }) {
 
   // NEW: Handle Citizen Notification
   const handleCitizenNotification = (task) => {
-    if (!task.referencePhone) {
-      setError('Phone number is required for citizen notification. Please add a phone number first.');
+    if (!task.referenceNumber) {
+      setError('Citizen phone number is required for citizen notification.');
       return;
     }
 
-    // Create formal grievance/task update message with task's reference number in message
+    // Create formal grievance/task update message
     let citizenMessage = `📋 *GRIEVANCE UPDATE*
 
 *Reference #:* ${task.referenceNumber}
@@ -212,7 +212,7 @@ Thank you for your patience. For any queries, please contact us.`;
 
     // Show message preview modal for citizen notification
     setEditableMessage(citizenMessage);
-    setSelectedPhoneForMessage(task.referencePhone);
+    setSelectedPhoneForMessage(task.referenceNumber);
     setShowMessageModal(true);
   };
 
