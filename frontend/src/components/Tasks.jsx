@@ -193,20 +193,7 @@ function Tasks({ adminPin }) {
       return;
     }
 
-    // Helper function to construct photo URL
-    const getPhotoUrl = (photoPath) => {
-      if (!photoPath) return '';
-      if (photoPath.startsWith('http')) return photoPath;
-      
-      const backendUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://localhost:5000'
-        : 'https://tasktracker-4xm2.onrender.com';
-      
-      const encodedPath = photoPath.split('/').map(part => encodeURIComponent(part)).join('/');
-      return `${backendUrl}${encodedPath}`;
-    };
-
-    // Create citizen message with reference number and task details
+    // Create citizen message with reference number and task details (NO PHOTO)
     let citizenMessage = `🔔 *CITIZEN NOTIFICATION*
 
 *Reference #:* ${task.referenceNumber || 'N/A'}
@@ -222,16 +209,7 @@ function Tasks({ adminPin }) {
 
 *Due Date:* ${new Date(task.dueDate).toLocaleDateString()}`;
 
-    // Add photo URL if task has photo
-    if (task.photo) {
-      const photoUrl = getPhotoUrl(task.photo);
-      citizenMessage += `
-
-📸 *TASK PHOTO:*
-${photoUrl}`;
-    }
-
-    // Show message preview modal for citizen notification
+    // Show message preview modal for citizen notification (without photo)
     setEditableMessage(citizenMessage);
     setSelectedPhoneForMessage(task.referencePhone);
     setShowMessageModal(true);
