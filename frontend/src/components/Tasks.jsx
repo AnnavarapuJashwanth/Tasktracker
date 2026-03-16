@@ -219,6 +219,21 @@ Thank you for your patience. For any queries, please contact us.`;
     setShowMessageModal(true);
   };
 
+  // Helper function to construct photo URL with proper encoding
+  const getPhotoUrl = (photoPath) => {
+    if (!photoPath) return '';
+    // Images are now stored as Cloudinary URLs or full URLs, return directly
+    if (photoPath.startsWith('http')) return photoPath;
+    
+    // Fallback for legacy local URLs
+    const backendUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'http://localhost:5000'
+      : 'https://tasktracker-4xm2.onrender.com';
+    
+    const encodedPath = photoPath.split('/').map(part => encodeURIComponent(part)).join('/');
+    return `${backendUrl}${encodedPath}`;
+  };
+
   // NEW: Handle automatic Assign button click
   const handleAssignClick = (task) => {
     // Generate acknowledgement link and send WhatsApp message with it
@@ -262,7 +277,18 @@ Thank you for your patience. For any queries, please contact us.`;
 *Status:* ${task.status}
 *Priority:* ${task.priority}
 *Due Date:* ${new Date(task.dueDate).toLocaleDateString()}
-*Sector:* ${task.sector}
+*Sector:* ${task.sector}`;
+
+      // Add photo URL if task has photo
+      if (task.photo) {
+        const photoUrl = getPhotoUrl(task.photo);
+        assignMessage += `
+
+📸 *TASK PHOTO:*
+${photoUrl}`;
+      }
+
+      assignMessage += `
 
 🔗 *TASK CONFIRMATION LINK:*
 ${acknowledgementUrl}
@@ -302,21 +328,6 @@ Please click the link above to mark this task as complete when done. Thank you!`
   const handleOpenWhatsApp = (phoneNumber, taskId) => {
     const task = tasks.find((t) => t._id === taskId);
     if (!task) return;
-
-    // Helper function to construct photo URL with proper encoding
-    const getPhotoUrl = (photoPath) => {
-      if (!photoPath) return '';
-      // Images are now stored as Cloudinary URLs or full URLs, return directly
-      if (photoPath.startsWith('http')) return photoPath;
-      
-      // Fallback for legacy local URLs
-      const backendUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://localhost:5000'
-        : 'https://tasktracker-4xm2.onrender.com';
-      
-      const encodedPath = photoPath.split('/').map(part => encodeURIComponent(part)).join('/');
-      return `${backendUrl}${encodedPath}`;
-    };
 
     // Format message with task details + image link
     let message = `📌 *TASK UPDATE*
