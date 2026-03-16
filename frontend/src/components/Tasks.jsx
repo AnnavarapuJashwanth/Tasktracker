@@ -292,13 +292,6 @@ ${photoUrl}`;
     setShowMessageModal(true);
   };
 
-    // Store task and show message preview modal
-    setSelectedTaskForMessage(task);
-    setEditableMessage(message);
-    setSelectedPhoneForMessage(phoneNumber);
-    setShowMessageModal(true);
-  };
-
   const handleSendWhatsApp = () => {
     setIsSending(true);
     
