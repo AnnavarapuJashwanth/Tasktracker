@@ -188,16 +188,26 @@ function Tasks({ adminPin }) {
 
   // NEW: Handle Citizen Notification
   const handleCitizenNotification = (task) => {
-    // Use referenceNumber if available, otherwise use assignedToContact
-    const reference = task.referenceNumber || task.assignedToContact || 'N/A';
-    
     if (!task.referencePhone) {
       setError('Phone number is required for citizen notification. Please add a phone number first.');
       return;
     }
 
-    // Create citizen message with reference number/assigned contact and subject
-    const citizenMessage = `🔔 *CITIZEN NOTIFICATION*
+    // Helper function to construct photo URL
+    const getPhotoUrl = (photoPath) => {
+      if (!photoPath) return '';
+      if (photoPath.startsWith('http')) return photoPath;
+      
+      const backendUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:5000'
+        : 'https://tasktracker-4xm2.onrender.com';
+      
+      const encodedPath = photoPath.split('/').map(part => encodeURIComponent(part)).join('/');
+      return `${backendUrl}${encodedPath}`;
+    };
+
+    // Create citizen message with reference number and task details
+    let citizenMessage = `🔔 *CITIZEN NOTIFICATION*
 
 *Reference #:* ${task.referenceNumber || 'N/A'}
 *Task:* ${task.title}
@@ -211,6 +221,15 @@ function Tasks({ adminPin }) {
 *Priority:* ${task.priority}
 
 *Due Date:* ${new Date(task.dueDate).toLocaleDateString()}`;
+
+    // Add photo URL if task has photo
+    if (task.photo) {
+      const photoUrl = getPhotoUrl(task.photo);
+      citizenMessage += `
+
+📸 *TASK PHOTO:*
+${photoUrl}`;
+    }
 
     // Show message preview modal for citizen notification
     setEditableMessage(citizenMessage);
@@ -251,18 +270,19 @@ function Tasks({ adminPin }) {
     // Helper function to construct photo URL with proper encoding
     const getPhotoUrl = (photoPath) => {
       if (!photoPath) return '';
+      // Images are now stored as Cloudinary URLs or full URLs, return directly
       if (photoPath.startsWith('http')) return photoPath;
       
+      // Fallback for legacy local URLs
       const backendUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
         ? 'http://localhost:5000'
         : 'https://tasktracker-4xm2.onrender.com';
       
-      // Properly encode the path (handle spaces and special characters)
       const encodedPath = photoPath.split('/').map(part => encodeURIComponent(part)).join('/');
       return `${backendUrl}${encodedPath}`;
     };
 
-    // Format message with task details + image note
+    // Format message with task details + image link
     let message = `📌 *TASK UPDATE*
 
 *Task:* ${task.title}
@@ -276,22 +296,13 @@ function Tasks({ adminPin }) {
 *Due Date:* ${new Date(task.dueDate).toLocaleDateString()}
 *Sector:* ${task.sector}`;
 
-    // Add photo URL if task has photo - include as clickable reference
+    // Add photo URL if task has photo - cloud link works directly, no manual steps needed
     if (task.photo) {
       const photoUrl = getPhotoUrl(task.photo);
       message += `
 
-📸 *VIEW TASK PHOTO:*
-${photoUrl}
-
-💡 *To attach this photo to WhatsApp:*
-1. Copy the link above
-2. After opening WhatsApp, click Attachment (📎)
-3. Paste the link or send directly`;
-    } else {
-      message += `
-
-💡 *Tip:* This task has no photo attached`;
+📸 *TASK PHOTO:*
+${photoUrl}`;
     }
 
     // Store task with processed photo URL

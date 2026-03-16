@@ -1,7 +1,7 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import Task from '../models/Task.js';
-import upload from '../middleware/upload.js';
+import upload, { uploadToCloudinary } from '../middleware/upload.js';
 
 const router = express.Router();
 
@@ -22,17 +22,17 @@ const adminAuth = (req, res, next) => {
 };
 
 // Create task
-router.post('/create', adminAuth, upload.single('photo'), async (req, res, next) => {
+router.post('/create', adminAuth, upload.single('photo'), uploadToCloudinary, async (req, res, next) => {
   try {
     const { title, description, priority, category, sector, dueDate, referencePhone, referenceNumber, assignedToContactId, assignedToContact } = req.body;
 
     console.log('Creating task with:', { title, description, priority, category, sector, dueDate, referencePhone, referenceNumber, assignedToContactId, assignedToContact });
-    console.log('File uploaded:', req.file ? req.file.filename : 'No file');
+    console.log('File uploaded:', req.file ? req.file.cloudinaryUrl : 'No file');
 
     let photoUrl = null;
     if (req.file) {
-      // Store the relative path/URL for the photo
-      photoUrl = `/uploads/${req.file.filename}`;
+      // Store the Cloudinary URL directly
+      photoUrl = req.file.cloudinaryUrl;
     }
 
     const task = new Task({
@@ -46,7 +46,7 @@ router.post('/create', adminAuth, upload.single('photo'), async (req, res, next)
       referenceNumber,
       assignedToContactId,
       assignedToContact,
-      photo: photoUrl, // Store the photo URL instead of base64
+      photo: photoUrl, // Store the Cloudinary URL
       createdBy: 'admin',
     });
 
@@ -128,7 +128,7 @@ router.get('/stats', adminAuth, async (req, res) => {
 });
 
 // Update task status
-router.put('/update/:id', adminAuth, upload.single('photo'), async (req, res) => {
+router.put('/update/:id', adminAuth, upload.single('photo'), uploadToCloudinary, async (req, res) => {
   try {
     const { status, startTime, endTime, title, description, priority, category, sector, dueDate, referencePhone, referenceNumber, assignedToContactId, assignedToContact, photo } = req.body;
     const task = await Task.findById(req.params.id);
@@ -149,9 +149,9 @@ router.put('/update/:id', adminAuth, upload.single('photo'), async (req, res) =>
     if (assignedToContactId !== undefined) task.assignedToContactId = assignedToContactId;
     if (assignedToContact !== undefined) task.assignedToContact = assignedToContact;
     
-    // Handle photo: if new file was uploaded, use it; otherwise use provided value
+    // Handle photo: if new file was uploaded, use Cloudinary URL; otherwise use provided value
     if (req.file) {
-      task.photo = `/uploads/${req.file.filename}`;
+      task.photo = req.file.cloudinaryUrl;
     } else if (photo !== undefined) {
       task.photo = photo;
     }
