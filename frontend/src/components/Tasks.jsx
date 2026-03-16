@@ -19,9 +19,6 @@ function Tasks({ adminPin }) {
   const [editableMessage, setEditableMessage] = useState('');
   const [selectedPhoneForMessage, setSelectedPhoneForMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [phoneInputModal, setPhoneInputModal] = useState(false);
-  const [inputPhone, setInputPhone] = useState('');
-  const [selectedTaskForAssign, setSelectedTaskForAssign] = useState(null);
   const [selectedTaskForMessage, setSelectedTaskForMessage] = useState(null);
   const [activeTaskId, setActiveTaskId] = useState(null);
   const [taskStartTime, setTaskStartTime] = useState(null);
@@ -235,20 +232,7 @@ Thank you for your patience. For any queries, please contact us.`;
   };
 
   // NEW: Handle automatic Assign button click
-  const handleAssignClick = (task) => {
-    // If task doesn't have assigned phone, ask user to enter it
-    if (!task.assignedToPhone || task.assignedToPhone.trim() === '') {
-      setSelectedTaskForAssign(task);
-      setPhoneInputModal(true);
-      setInputPhone('');
-    } else {
-      // Generate acknowledgement link and send WhatsApp message with it
-      generateAcknowledgementLink(task);
-    }
-  };
-
-  // Generate acknowledgement link
-  const generateAcknowledgementLink = async (task) => {
+  const handleAssignClick = async (task) => {
     try {
       setGeneratingLink(true);
       const pin = localStorage.getItem('adminPin');
@@ -272,9 +256,9 @@ Thank you for your patience. For any queries, please contact us.`;
       const data = await response.json();
       const acknowledgementUrl = data.acknowledgementUrl;
       setAcknowledgementLink(acknowledgementUrl);
-      setSelectedTaskForAssign(task);
+      setSelectedTaskForMessage(task);
 
-      // Create WhatsApp message with the acknowledgement link
+      // Create WhatsApp message with the acknowledgement link + photo
       let assignMessage = `✅ *TASK ASSIGNED*
 
 *Task:* ${task.title}
@@ -304,36 +288,53 @@ ${task.assignedToContact ? `*Assigned to:* ${task.assignedToContact}` : ''}
 
 Please click the link above to mark this task as complete when done. Thank you!`;
 
-      // Show the message modal to send via WhatsApp
+      // Set message and phone (use existing or empty for input)
       setEditableMessage(assignMessage);
       setSelectedPhoneForMessage(task.assignedToPhone || '');
       setShowMessageModal(true);
 
-      setSuccessMessage('✅ Acknowledgement link generated! Ready to send via WhatsApp...');
-      setTimeout(() => setSuccessMessage(''), 3000);
+      setSuccessMessage('✅ Message ready! Fill phone and send...');
+      setTimeout(() => setSuccessMessage(''), 2000);
     } catch (err) {
-      console.error('Error generating link:', err);
-      setError('Failed to generate acknowledgement link. Please try again.');
+      console.error('Error:', err);
+      setError('Failed to prepare message. Please try again.');
     } finally {
       setGeneratingLink(false);
     }
   };
 
-  // NEW: Handle phone input and generate acknowledgement link
-  const handlePhoneInputSubmit = () => {
-    if (!inputPhone.trim()) {
-      setError('Please enter a valid phone number');
-      return;
+  // Generate acknowledgement link
+  const generateAcknowledgementLink = async (task) => {
+    try {
+      setGeneratingLink(true);
+      const pin = localStorage.getItem('adminPin');
+      const apiBaseURL = (typeof window !== 'undefined') && (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
+        ? 'https://tasktracker-4xm2.onrender.com/api'
+        : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
+
+      const response = await fetch(`${apiBaseURL}/tasks/${task._id}/acknowledge-link`, {
+        method: 'POST',
+        headers: {
+          'adminPin': pin,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        setError('Failed to regenerate link');
+        return;
+      }
+
+      const data = await response.json();
+      setAcknowledgementLink(data.acknowledgementUrl);
+      setSuccessMessage('✅ Link regenerated!');
+      setTimeout(() => setSuccessMessage(''), 2000);
+    } catch (err) {
+      console.error('Error regenerating link:', err);
+      setError('Failed to regenerate link');
+    } finally {
+      setGeneratingLink(false);
     }
-    
-    // Update task with phone number and generate acknowledgement link
-    if (selectedTaskForAssign) {
-      selectedTaskForAssign.assignedToPhone = inputPhone.trim();
-      generateAcknowledgementLink(selectedTaskForAssign);
-    }
-    
-    setPhoneInputModal(false);
-    setInputPhone('');
   };
 
   const handleOpenWhatsApp = (phoneNumber, taskId) => {
@@ -370,6 +371,13 @@ ${photoUrl}`;
   };
 
   const handleSendWhatsApp = () => {
+    // Validate phone number
+    if (!selectedPhoneForMessage || selectedPhoneForMessage.trim() === '') {
+      setError('❌ Please enter a WhatsApp number first!');
+      setTimeout(() => setError(''), 3000);
+      return;
+    }
+
     setIsSending(true);
     
     // Show sending feedback
@@ -493,66 +501,7 @@ ${photoUrl}`;
 
       {/* Phone Input Modal - for Task Assignment */}
       {phoneInputModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
-            <div className="flex justify-between items-center p-6 border-b-2 border-gray-200 bg-gradient-to-r from-green-50 to-blue-50">
-              <h3 className="text-2xl font-bold text-gray-800">📱 Assign Task - Enter WhatsApp Number</h3>
-              <button
-                onClick={() => {
-                  setPhoneInputModal(false);
-                  setInputPhone('');
-                  setSelectedTaskForAssign(null);
-                }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <FaTimes className="text-xl text-gray-600" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <p className="text-gray-600">
-                Enter the WhatsApp number to assign this task to:
-                <span className="font-bold text-gray-900"> {selectedTaskForAssign?.title}</span>
-              </p>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">WhatsApp Number</label>
-                <input
-                  type="tel"
-                  value={inputPhone}
-                  onChange={(e) => setInputPhone(e.target.value)}
-                  placeholder="+919876543210"
-                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-600 focus:outline-none text-gray-800 font-medium"
-                  autoFocus
-                />
-              </div>
-
-              <p className="text-xs text-gray-500">
-                💡 Include country code (e.g., +91 for India, +1 for USA)
-              </p>
-            </div>
-
-            <div className="flex gap-3 p-6 border-t border-gray-200 bg-gray-50">
-              <button
-                onClick={() => {
-                  setPhoneInputModal(false);
-                  setInputPhone('');
-                  setSelectedTaskForAssign(null);
-                }}
-                className="flex-1 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handlePhoneInputSubmit}
-                className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors"
-              >
-                ✅ Generate Link & Send
-              </button>
-              </button>
-            </div>
-          </div>
-        </div>
+        <></>
       )}
 
 
@@ -582,12 +531,31 @@ ${photoUrl}`;
 
             {/* Modal Body */}
             <div className="p-6 space-y-4">
-              {/* Message Display Info */}
-              <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
-                <p className="text-sm font-semibold text-green-900">
-                  📱 Sending to: <span className="text-lg">{selectedPhoneForMessage}</span>
-                </p>
-              </div>
+              {/* Phone Input if not set */}
+              {!selectedPhoneForMessage || selectedPhoneForMessage.trim() === '' ? (
+                <div className="bg-yellow-50 border-2 border-yellow-300 p-4 rounded-lg">
+                  <label className="block text-sm font-bold text-yellow-900 mb-2">
+                    📱 WhatsApp Number (Required)
+                  </label>
+                  <input
+                    type="tel"
+                    value={selectedPhoneForMessage}
+                    onChange={(e) => setSelectedPhoneForMessage(e.target.value)}
+                    placeholder="+919876543210"
+                    className="w-full px-4 py-2 border-2 border-yellow-300 rounded-lg focus:border-green-600 focus:outline-none text-gray-800 font-medium"
+                    autoFocus
+                  />
+                  <p className="text-xs text-yellow-800 mt-2">
+                    💡 Include country code (e.g., +91 for India, +1 for USA)
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+                  <p className="text-sm font-semibold text-green-900">
+                    📱 Sending to: <span className="text-lg font-bold">{selectedPhoneForMessage}</span>
+                  </p>
+                </div>
+              )}
 
               {/* Task Image Preview (if exists) */}
               {selectedTaskForMessage?.processedPhotoUrl && (
