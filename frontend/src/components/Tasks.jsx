@@ -63,11 +63,8 @@ function Tasks({ adminPin }) {
 
   const handleCreateTask = async (formData) => {
     try {
-      // Check if there's a photo file that needs to be handled
-      let dataToSend = formData;
-      
       if (formData.photo && formData.photo instanceof File) {
-        // If photo is a File object, we need to use FormData
+        // If photo is a File object, we need to use FormData with fetch
         const fd = new FormData();
         for (const key in formData) {
           if (key !== 'photo' || formData.photo) {
@@ -76,34 +73,20 @@ function Tasks({ adminPin }) {
         }
         
         const pin = localStorage.getItem('adminPin');
-        // Use API_BASE_URL from api.js by checking environment
-        const isProduction = window.location.hostname !== 'localhost' && 
-                             window.location.hostname !== '127.0.0.1';
-        const baseUrl = isProduction 
-          ? 'https://tasktracker-4xm2.onrender.com/api'
-          : 'http://localhost:5000/api';
         
-        const url = editingTask 
-          ? `${baseUrl}/tasks/update/${editingTask._id}`
-          : `${baseUrl}/tasks/create`;
-        
-        const response = await fetch(url, {
-          method: editingTask ? 'PUT' : 'POST',
-          headers: {
-            'adminPin': pin,
-          },
-          body: fd,
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to save task');
-        }
-        
-        if (editingTask) {
-          setSuccessMessage('Task updated successfully');
-          setEditingTask(null);
-        } else {
-          setSuccessMessage('Task created successfully');
+        // Import and use the API_BASE_URL from api.js by making request
+        try {
+          if (editingTask) {
+            await tasksAPI.updateTask(editingTask._id, formData);
+            setSuccessMessage('Task updated successfully');
+            setEditingTask(null);
+          } else {
+            await tasksAPI.createTask(formData);
+            setSuccessMessage('Task created successfully');
+          }
+        } catch (photoErr) {
+          console.error('Photo API error:', photoErr);
+          throw photoErr;
         }
       } else {
         // If no photo or photo is a URL string, use API with JSON
