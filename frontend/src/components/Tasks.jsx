@@ -317,12 +317,14 @@ ${photoUrl}`;
 
       assignMessage += `
 
-🔗 *TASK CONFIRMATION LINK:*
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ *TAP LINK BELOW TO CONFIRM TASK:*
 ${acknowledgementUrl}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 ${task.assignedToContact ? `*Assigned to:* ${task.assignedToContact}` : ''}
 
-Please click the link above to mark this task as complete when done. Thank you!`;
+Thank you!`;
 
       // Set message and phone - use assigned contact's phone if available
       setEditableMessage(assignMessage);
