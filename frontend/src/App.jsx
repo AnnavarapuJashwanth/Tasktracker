@@ -39,6 +39,11 @@ function App() {
     setSidebarOpen(false); // Close sidebar on mobile when tab is clicked
   };
 
+  // If not logged in, show login page only
+  if (!isLoggedIn) {
+    return <Login onLogin={handleLogin} />;
+  }
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Mobile Menu Button */}
