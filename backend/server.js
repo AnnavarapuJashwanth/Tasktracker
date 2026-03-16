@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
+import authRoutes from './routes/auth.js';
 import tasksRoutes from './routes/tasks.js';
 import contactsRoutes from './routes/contacts.js';
 import whatsappRoutes from './routes/whatsapp.js';
@@ -45,6 +46,7 @@ app.use('/uploads', express.static('uploads'));
 connectDB();
 
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/contacts', contactsRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
