@@ -241,22 +241,8 @@ router.delete('/delete/:id', adminAuth, async (req, res) => {
   }
 });
 
-// Get single task
-router.get('/:id', adminAuth, async (req, res) => {
-  try {
-    const task = await Task.findById(req.params.id);
+// ============ ACKNOWLEDGEMENT ROUTES (Must come BEFORE generic /:id route) ============
 
-    if (!task) {
-      return res.status(404).json({ message: 'Task not found' });
-    }
-
-    res.json(task);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching task', error: error.message });
-  }
-});
-
-// Error handler middleware for multer and other errors
 // Generate acknowledgement link for task
 router.post('/:taskId/acknowledge-link', adminAuth, async (req, res) => {
   try {
@@ -364,6 +350,23 @@ router.post('/acknowledge/:token/complete', async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Error completing task', error: error.message });
+  }
+});
+
+// ============ END ACKNOWLEDGEMENT ROUTES ============
+
+// Get single task (must be AFTER all specific routes)
+router.get('/:id', adminAuth, async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.id);
+
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    res.json(task);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching task', error: error.message });
   }
 });
 
