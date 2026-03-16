@@ -23,6 +23,23 @@ app.use('/api/tasks', tasksRoutes);
 app.use('/api/contacts', contactsRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    message: '✅ Backend is running successfully!',
+    status: 'active',
+    version: '1.0.0',
+    database: 'MongoDB Atlas Connected',
+    endpoints: {
+      tasks: '/api/tasks',
+      contacts: '/api/contacts',
+      whatsapp: '/api/whatsapp',
+      health: '/api/health',
+      auth: '/api/auth/login'
+    }
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ message: 'Server is running' });
