@@ -1,4 +1,5 @@
 import express from 'express';
+import mongoose from 'mongoose';
 import Task from '../models/Task.js';
 import upload from '../middleware/upload.js';
 
@@ -21,13 +22,8 @@ const adminAuth = (req, res, next) => {
 };
 
 // Create task
-router.post('/create', adminAuth, upload.single('photo'), async (req, res) => {
+router.post('/create', adminAuth, upload.single('photo'), async (req, res, next) => {
   try {
-    // Check for multer errors
-    if (req.file && req.file.error) {
-      return res.status(400).json({ message: 'File upload error', error: req.file.error });
-    }
-    
     const { title, description, priority, category, sector, dueDate, referencePhone, referenceNumber, assignedToContactId, assignedToContact } = req.body;
 
     console.log('Creating task with:', { title, description, priority, category, sector, dueDate, referencePhone, referenceNumber, assignedToContactId, assignedToContact });
@@ -61,30 +57,26 @@ router.post('/create', adminAuth, upload.single('photo'), async (req, res) => {
     console.log('Error creating task:', error.message);
     res.status(500).json({ message: 'Error creating task', error: error.message });
   }
-}, (err, req, res, next) => {
-  // Multer error handler
-  if (err) {
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ message: 'File too large. Maximum size is 10MB' });
-    }
-    if (err.code === 'LIMIT_FILE_COUNT') {
-      return res.status(400).json({ message: 'Too many files' });
-    }
-    return res.status(400).json({ message: 'File upload error', error: err.message });
-  }
-  next();
 });
 
 // Get all tasks
 router.get('/all', adminAuth, async (req, res) => {
   try {
     console.log('Fetching all tasks...');
+    
+    // Check if database is connected
+    if (mongoose.connection.readyState !== 1) {
+      console.warn('Database not connected, returning empty tasks');
+      return res.json([]);
+    }
+    
     const tasks = await Task.find().sort({ createdAt: -1 });
     console.log('Tasks found:', tasks.length);
     res.json(tasks);
   } catch (error) {
     console.log('Error fetching tasks:', error.message);
-    res.status(500).json({ message: 'Error fetching tasks', error: error.message });
+    // Return empty array instead of error
+    res.json([]);
   }
 });
 
@@ -101,14 +93,37 @@ router.get('/sector/:sector', adminAuth, async (req, res) => {
 // Get task statistics
 router.get('/stats', adminAuth, async (req, res) => {
   try {
+    console.log('Fetching task statistics...');
+    
+    // Check if mongoose is connected
+    if (mongoose.connection.readyState !== 1) {
+      console.warn('Database not connected, returning default stats');
+      return res.json({ 
+        total: 0, 
+        pending: 0, 
+        inProgress: 0, 
+        completed: 0,
+        warning: 'Database connection unavailable - showing default values'
+      });
+    }
+    
     const total = await Task.countDocuments();
     const pending = await Task.countDocuments({ status: 'Pending' });
     const inProgress = await Task.countDocuments({ status: 'In Progress' });
     const completed = await Task.countDocuments({ status: 'Completed' });
 
+    console.log('Stats calculated:', { total, pending, inProgress, completed });
     res.json({ total, pending, inProgress, completed });
   } catch (error) {
-    res.status(500).json({ message: 'Error fetching stats', error: error.message });
+    console.log('Error fetching stats:', error.message);
+    // Return default stats instead of error
+    res.json({ 
+      total: 0, 
+      pending: 0, 
+      inProgress: 0, 
+      completed: 0,
+      error: error.message 
+    });
   }
 });
 
@@ -166,18 +181,6 @@ router.put('/update/:id', adminAuth, upload.single('photo'), async (req, res) =>
   } catch (error) {
     res.status(500).json({ message: 'Error updating task', error: error.message });
   }
-}, (err, req, res, next) => {
-  // Multer error handler
-  if (err) {
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ message: 'File too large. Maximum size is 10MB' });
-    }
-    if (err.code === 'LIMIT_FILE_COUNT') {
-      return res.status(400).json({ message: 'Too many files' });
-    }
-    return res.status(400).json({ message: 'File upload error', error: err.message });
-  }
-  next();
 });
 
 // Assign task
@@ -232,6 +235,28 @@ router.get('/:id', adminAuth, async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: 'Error fetching task', error: error.message });
   }
+});
+
+// Error handler middleware for multer and other errors
+router.use((err, req, res, next) => {
+  if (err) {
+    console.error('Route error:', err.message);
+    
+    // Handle multer errors
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ message: 'File too large. Maximum size is 10MB' });
+    }
+    if (err.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({ message: 'Too many files' });
+    }
+    if (err.message && err.message.includes('MIME')) {
+      return res.status(400).json({ message: 'Only image files are allowed' });
+    }
+    
+    // Generic error
+    return res.status(500).json({ message: 'Internal server error', error: err.message });
+  }
+  next();
 });
 
 export default router;
