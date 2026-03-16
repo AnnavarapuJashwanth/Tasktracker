@@ -240,6 +240,17 @@ Thank you for your patience. For any queries, please contact us.`;
         ? 'https://tasktracker-4xm2.onrender.com/api'
         : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
+      // Get phone number from task or fetch from contacts
+      let phoneNumber = task.assignedToPhone;
+      
+      // If no phone stored, extract from assignedToContact (format: "Name (+phone)")
+      if (!phoneNumber && task.assignedToContact) {
+        const phoneMatch = task.assignedToContact.match(/\+[\d\s\-\(\)]+/);
+        if (phoneMatch) {
+          phoneNumber = phoneMatch[0].replace(/[\s\-\(\)]/g, '');
+        }
+      }
+
       const response = await fetch(`${apiBaseURL}/tasks/${task._id}/acknowledge-link`, {
         method: 'POST',
         headers: {
@@ -288,12 +299,15 @@ ${task.assignedToContact ? `*Assigned to:* ${task.assignedToContact}` : ''}
 
 Please click the link above to mark this task as complete when done. Thank you!`;
 
-      // Set message and phone (use existing or empty for input)
+      // Set message and phone - use assigned contact's phone if available
       setEditableMessage(assignMessage);
-      setSelectedPhoneForMessage(task.assignedToPhone || '');
+      setSelectedPhoneForMessage(phoneNumber || '');
       setShowMessageModal(true);
 
-      setSuccessMessage('✅ Message ready! Fill phone and send...');
+      const statusMsg = phoneNumber 
+        ? `✅ Ready to send to ${task.assignedToContact}!`
+        : `⚠️ Please enter phone number to send...`;
+      setSuccessMessage(statusMsg);
       setTimeout(() => setSuccessMessage(''), 2000);
     } catch (err) {
       console.error('Error:', err);
