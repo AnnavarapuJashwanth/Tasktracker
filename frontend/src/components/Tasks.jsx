@@ -1,0 +1,577 @@
+import React, { useEffect, useState } from 'react';
+import { FaPlus, FaTrash, FaPlay, FaCheck, FaShare, FaUsers, FaTimes, FaPhone, FaEdit } from 'react-icons/fa';
+import { tasksAPI, whatsappAPI } from '../api';
+import TaskForm from './TaskForm';
+import TaskCard from './TaskCard';
+import SessionTimer from './SessionTimer';
+
+function Tasks({ adminPin }) {
+  const [tasks, setTasks] = useState([]);
+  const [filteredTasks, setFilteredTasks] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
+  const [selectedSector, setSelectedSector] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [editableMessage, setEditableMessage] = useState('');
+  const [selectedPhoneForMessage, setSelectedPhoneForMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [phoneInputModal, setPhoneInputModal] = useState(false);
+  const [inputPhone, setInputPhone] = useState('');
+  const [selectedTaskForAssign, setSelectedTaskForAssign] = useState(null);
+  const [selectedTaskForMessage, setSelectedTaskForMessage] = useState(null);
+  const [activeTaskId, setActiveTaskId] = useState(null);
+  const [taskStartTime, setTaskStartTime] = useState(null);
+
+  useEffect(() => {
+    loadTasks();
+  }, [adminPin, selectedSector]);
+
+  useEffect(() => {
+    filterTasks();
+  }, [tasks, selectedStatus]);
+
+  const loadTasks = async () => {
+    setLoading(true);
+    try {
+      let response;
+      if (selectedSector === 'all') {
+        response = await tasksAPI.getAllTasks();
+      } else {
+        response = await tasksAPI.getTasksBySector(selectedSector);
+      }
+      setTasks(response.data);
+      setError('');
+    } catch (err) {
+      setError('Failed to load tasks');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filterTasks = () => {
+    let filtered = tasks;
+    if (selectedStatus !== 'all') {
+      filtered = tasks.filter((task) => task.status === selectedStatus);
+    }
+    setFilteredTasks(filtered);
+  };
+
+  const handleCreateTask = async (formData) => {
+    try {
+      // Check if there's a photo file that needs to be handled
+      let dataToSend = formData;
+      
+      if (formData.photo && formData.photo instanceof File) {
+        // If photo is a File object, we need to use FormData
+        const fd = new FormData();
+        for (const key in formData) {
+          if (key !== 'photo' || formData.photo) {
+            fd.append(key, formData[key]);
+          }
+        }
+        
+        const pin = localStorage.getItem('adminPin');
+        const url = editingTask 
+          ? `http://localhost:5000/api/tasks/update/${editingTask._id}`
+          : 'http://localhost:5000/api/tasks/create';
+        
+        const response = await fetch(url, {
+          method: editingTask ? 'PUT' : 'POST',
+          headers: {
+            'adminPin': pin,
+          },
+          body: fd,
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to save task');
+        }
+        
+        if (editingTask) {
+          setSuccessMessage('Task updated successfully');
+          setEditingTask(null);
+        } else {
+          setSuccessMessage('Task created successfully');
+        }
+      } else {
+        // If no photo or photo is a URL string, use API with JSON
+        if (editingTask) {
+          const updateData = {...formData};
+          if (updateData.photo === null) {
+            delete updateData.photo;
+          }
+          await tasksAPI.updateTask(editingTask._id, updateData);
+          setSuccessMessage('Task updated successfully');
+          setEditingTask(null);
+        } else {
+          await tasksAPI.createTask(formData);
+          setSuccessMessage('Task created successfully');
+        }
+      }
+      
+      setShowForm(false);
+      loadTasks();
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Failed to save task');
+      console.error('Task creation error:', err);
+    }
+  };
+
+  const handleEditTask = (task) => {
+    setEditingTask(task);
+    setShowForm(true);
+  };
+
+  const handleStartTask = async (taskId) => {
+    try {
+      setActiveTaskId(taskId);
+      setTaskStartTime(Date.now());
+      await tasksAPI.updateTask(taskId, { status: 'In Progress' });
+      loadTasks();
+      setSuccessMessage('Task started - Timer is running');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setError('Failed to start task');
+    }
+  };
+
+  const handleCompleteTask = async (taskId) => {
+    try {
+      if (activeTaskId === taskId) {
+        setActiveTaskId(null);
+        setTaskStartTime(null);
+      }
+      await tasksAPI.updateTask(taskId, { status: 'Completed' });
+      loadTasks();
+      setSuccessMessage('Task completed');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setError('Failed to complete task');
+    }
+  };
+
+  const handleDeleteTask = async (taskId) => {
+    if (window.confirm('Are you sure you want to delete this task?')) {
+      try {
+        await tasksAPI.deleteTask(taskId);
+        loadTasks();
+        setSuccessMessage('Task deleted successfully');
+        setTimeout(() => setSuccessMessage(''), 3000);
+      } catch (err) {
+        setError('Failed to delete task');
+      }
+    }
+  };
+
+  // NEW: Handle Citizen Notification
+  const handleCitizenNotification = (task) => {
+    // Use referenceNumber if available, otherwise use assignedToContact
+    const reference = task.referenceNumber || task.assignedToContact || 'N/A';
+    
+    if (!task.referencePhone) {
+      setError('Phone number is required for citizen notification. Please add a phone number first.');
+      return;
+    }
+
+    // Create citizen message with reference number/assigned contact and subject
+    const citizenMessage = `🔔 *CITIZEN NOTIFICATION*
+
+*Reference:* ${reference}
+
+*Subject:* ${task.title}
+
+*Description:* ${task.description}
+
+*Sector:* ${task.sector}
+
+*Status:* ${task.status}
+
+*Priority:* ${task.priority}
+
+*Due Date:* ${new Date(task.dueDate).toLocaleDateString()}`;
+
+    // Show message preview modal for citizen notification
+    setEditableMessage(citizenMessage);
+    setSelectedPhoneForMessage(task.referencePhone);
+    setShowMessageModal(true);
+  };
+
+  // NEW: Handle automatic Assign button click
+  const handleAssignClick = (task) => {
+    // If task has referencePhone, auto-open WhatsApp
+    if (task.referencePhone && task.referencePhone.trim()) {
+      handleOpenWhatsApp(task.referencePhone, task._id);
+    } else {
+      // Otherwise, show phone input modal
+      setSelectedTaskForAssign(task);
+      setInputPhone('');
+      setPhoneInputModal(true);
+    }
+  };
+
+  // NEW: Handle phone input and auto-open
+  const handlePhoneInputSubmit = () => {
+    if (!inputPhone.trim()) {
+      setError('Please enter a valid phone number');
+      return;
+    }
+    
+    handleOpenWhatsApp(inputPhone, selectedTaskForAssign._id);
+    setPhoneInputModal(false);
+    setInputPhone('');
+    setSelectedTaskForAssign(null);
+  };
+
+  const handleOpenWhatsApp = (phoneNumber, taskId) => {
+    const task = tasks.find((t) => t._id === taskId);
+    if (!task) return;
+
+    // Format message with task details + image note
+    let message = `📌 *TASK UPDATE*
+
+*Task:* ${task.title}
+
+*Description:* ${task.description}
+
+*Reference:* ${task.assignedTo || 'To be assigned'}
+*Status:* ${task.status}
+*Priority:* ${task.priority}
+*Due Date:* ${new Date(task.dueDate).toLocaleDateString()}
+*Sector:* ${task.sector}`;
+
+    // Add image note if task has photo
+    if (task.photo) {
+      message += `
+
+📎 *ATTACHMENT:* Task Photo (See below or in task details)`;
+    }
+
+    // Store task and show message preview modal
+    setSelectedTaskForMessage(task);
+    setEditableMessage(message);
+    setSelectedPhoneForMessage(phoneNumber);
+    setShowMessageModal(true);
+  };
+
+  const handleSendWhatsApp = () => {
+    setIsSending(true);
+    
+    // Show sending feedback
+    setSuccessMessage('📱 Opening WhatsApp with your message...');
+    
+    // Small delay to show the status message
+    setTimeout(() => {
+      const whatsappUrl = `https://wa.me/${selectedPhoneForMessage}?text=${encodeURIComponent(editableMessage)}`;
+      window.open(whatsappUrl, '_blank');
+      
+      setShowMessageModal(false);
+      setSelectedTaskForMessage(null);
+      setIsSending(false);
+      
+      // Show confirmation that WhatsApp was opened
+      setSuccessMessage('✓ WhatsApp opened! Your message is ready to send. Attach the image manually in WhatsApp.');
+      setTimeout(() => setSuccessMessage(''), 5000);
+    }, 500);
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(editableMessage);
+    setSuccessMessage('Message copied to clipboard!');
+    setTimeout(() => setSuccessMessage(''), 3000);
+  };
+
+  return (
+    <div className="animate-fadeIn">
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-3xl font-bold text-gray-800">Tasks Management</h2>
+        <button className="btn-primary" onClick={() => setShowForm(!showForm)}>
+          <FaPlus /> {showForm ? 'Cancel' : 'Create New Task'}
+        </button>
+      </div>
+
+      {error && (
+        <div className="error-message mb-6">
+          {error}
+          <button onClick={() => setError('')} className="ml-auto text-xl">&times;</button>
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="success-message mb-6">
+          {successMessage}
+          <button onClick={() => setSuccessMessage('')} className="ml-auto text-xl">&times;</button>
+        </div>
+      )}
+
+      {showForm && (
+        <TaskForm
+          editingTask={editingTask}
+          onSubmit={handleCreateTask}
+          onCancel={() => {
+            setShowForm(false);
+            setEditingTask(null);
+          }}
+        />
+      )}
+
+      {/* Filters */}
+      <div className="flex gap-4 mb-6">
+        <select
+          value={selectedSector}
+          onChange={(e) => setSelectedSector(e.target.value)}
+          className="form-select"
+        >
+          <option value="all">All Sectors</option>
+          <option value="Vignan University">Vignan University</option>
+          <option value="Narasarapet Region">Narasarapet Region</option>
+        </select>
+
+        <select
+          value={selectedStatus}
+          onChange={(e) => setSelectedStatus(e.target.value)}
+          className="form-select"
+        >
+          <option value="all">All Status</option>
+          <option value="Pending">Pending</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Completed">Completed</option>
+        </select>
+      </div>
+
+      {/* Active Task Timer */}
+      {activeTaskId && (
+        <div className="mb-6">
+          {filteredTasks.map((task) =>
+            task._id === activeTaskId ? (
+              <div key={task._id}>
+                <p className="text-sm font-semibold text-gray-700 mb-3">Currently Working On: <span className="text-blue-600">{task.title}</span></p>
+                <SessionTimer isRunning={true} startTime={taskStartTime} />
+              </div>
+            ) : null
+          )}
+        </div>
+      )}
+
+      {/* Tasks List */}
+      {loading ? (
+        <p className="text-center text-gray-500">Loading tasks...</p>
+      ) : filteredTasks.length === 0 ? (
+        <p className="text-center text-gray-500">No tasks found</p>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filteredTasks.map((task) => (
+            <TaskCard
+              key={task._id}
+              task={task}
+              onStart={handleStartTask}
+              onComplete={handleCompleteTask}
+              onDelete={handleDeleteTask}
+              onAssign={handleAssignClick}
+              onCitizen={handleCitizenNotification}
+              onEdit={handleEditTask}
+              isActive={activeTaskId === task._id}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Phone Input Modal - NEW */}
+      {phoneInputModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full">
+            <div className="flex justify-between items-center p-6 border-b-2 border-gray-200 bg-gradient-to-r from-purple-50 to-blue-50">
+              <h3 className="text-2xl font-bold text-gray-800">Add WhatsApp Number</h3>
+              <button
+                onClick={() => {
+                  setPhoneInputModal(false);
+                  setInputPhone('');
+                  setSelectedTaskForAssign(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <FaTimes className="text-xl text-gray-600" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <p className="text-gray-600">
+                Enter the WhatsApp number for:
+                <span className="font-bold text-gray-900"> {selectedTaskForAssign?.title}</span>
+              </p>
+
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">WhatsApp Number</label>
+                <input
+                  type="tel"
+                  value={inputPhone}
+                  onChange={(e) => setInputPhone(e.target.value)}
+                  placeholder="+919876543210"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-600 focus:outline-none text-gray-800 font-medium"
+                  autoFocus
+                />
+              </div>
+
+              <p className="text-xs text-gray-500">
+                💡 Include country code (e.g., +91 for India, +1 for USA)
+              </p>
+            </div>
+
+            <div className="flex gap-3 p-6 border-t border-gray-200 bg-gray-50">
+              <button
+                onClick={() => {
+                  setPhoneInputModal(false);
+                  setInputPhone('');
+                  setSelectedTaskForAssign(null);
+                }}
+                className="flex-1 px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePhoneInputSubmit}
+                className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg transition-colors"
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Message Preview & Edit Modal */}
+      {showMessageModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-screen overflow-y-auto">
+            {/* Modal Header */}
+            <div className="sticky top-0 flex justify-between items-center p-6 border-b-2 border-gray-200 bg-gradient-to-r from-green-50 to-primary-50">
+              <div className="flex items-center gap-3">
+                <div className="text-3xl">💬</div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800">WhatsApp Message</h3>
+                  <p className="text-sm text-gray-600">Edit your message before sending</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowMessageModal(false);
+                  setSelectedTaskForMessage(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <FaTimes className="text-xl text-gray-600" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-4">
+              {/* Message Display Info */}
+              <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+                <p className="text-sm font-semibold text-green-900">
+                  📱 Sending to: <span className="text-lg">{selectedPhoneForMessage}</span>
+                </p>
+              </div>
+
+              {/* Task Image Preview (if exists) */}
+              {selectedTaskForMessage?.photo && (
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-gray-700">📎 Task Photo</p>
+                  <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <img
+                      src={selectedTaskForMessage.photo}
+                      alt="Task"
+                      className="w-full max-h-40 object-cover rounded-lg"
+                    />
+                  </div>
+                  <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg">
+                    <p className="text-xs font-semibold text-blue-900">
+                      💡 <strong>How to attach image to WhatsApp:</strong>
+                    </p>
+                    <ol className="text-xs text-blue-800 mt-2 space-y-1 ml-4 list-decimal">
+                      <li>After clicking "Send via WhatsApp", the chat window will open</li>
+                      <li>Inside WhatsApp, click the <strong>📎 Attachment</strong> button (paperclip icon)</li>
+                      <li>Select <strong>Photos & Videos</strong></li>
+                      <li>Choose the image and send</li>
+                      <li>Or copy the message and paste it first, then attach the image</li>
+                    </ol>
+                  </div>
+                </div>
+              )}
+
+              {/* Editable Message Box */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Message Preview & Edit
+                </label>
+                <textarea
+                  value={editableMessage}
+                  onChange={(e) => setEditableMessage(e.target.value)}
+                  className="w-full h-56 p-4 border-2 border-gray-300 rounded-xl font-mono text-sm leading-relaxed focus:border-primary-500 focus:outline-none resize-none"
+                  placeholder="Edit your message here..."
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Character count: {editableMessage.length}
+                </p>
+              </div>
+
+              {/* Preview as it appears in WhatsApp */}
+              <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                <p className="text-xs font-semibold text-gray-600 mb-2">PREVIEW IN WHATSAPP:</p>
+                <div className="bg-white p-3 rounded border-l-4 border-green-500 whitespace-pre-wrap text-sm text-gray-800 font-sans break-words">
+                  {editableMessage}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer / Actions */}
+            <div className="sticky bottom-0 p-6 border-t-2 border-gray-200 bg-gray-50 flex gap-3">
+              <button
+                onClick={copyToClipboard}
+                disabled={isSending}
+                className="flex-1 px-4 py-3 bg-gray-300 hover:bg-gray-400 disabled:bg-gray-200 disabled:cursor-not-allowed text-gray-800 font-semibold rounded-lg transition-colors"
+              >
+                📋 Copy Message
+              </button>
+              <button
+                onClick={() => {
+                  setShowMessageModal(false);
+                  setSelectedTaskForMessage(null);
+                }}
+                disabled={isSending}
+                className="flex-1 px-4 py-3 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendWhatsApp}
+                disabled={isSending}
+                className={`flex-1 px-4 py-3 font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                  isSending
+                    ? 'bg-green-300 cursor-not-allowed text-white'
+                    : 'bg-green-500 hover:bg-green-600 text-white'
+                }`}
+              >
+                {isSending ? (
+                  <>
+                    <span className="animate-spin">⏳</span> Sending...
+                  </>
+                ) : (
+                  <>
+                    ✓ Send via WhatsApp
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default Tasks;

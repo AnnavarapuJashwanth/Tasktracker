@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  @apply box-border;
+}
+
+html,
+body {
+  @apply h-full w-full;
+}
+
+#root {
+  @apply h-full w-full;
+}
+
+::-webkit-scrollbar {
+  @apply w-2 h-2;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 rounded;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-600;
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-5 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-lg font-semibold flex items-center gap-2 transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-action {
+    @apply px-3 py-2 border border-transparent rounded-md font-semibold flex items-center gap-1 transition-all duration-300 text-sm;
+  }
+
+  .btn-start {
+    @apply bg-success-500 hover:bg-success-600 text-white;
+  }
+
+  .btn-complete {
+    @apply bg-info-500 hover:bg-info-600 text-white;
+  }
+
+  .btn-assign {
+    @apply bg-warning-500 hover:bg-warning-600 text-white;
+  }
+
+  .btn-citizen {
+    @apply bg-cyan-500 hover:bg-cyan-600 text-white;
+  }
+
+  .btn-delete {
+    @apply bg-danger-500 hover:bg-danger-600 text-white px-3 py-2 rounded-md;
+  }
+
+  .error-message {
+    @apply bg-red-50 text-red-900 px-4 py-3 rounded-lg mb-5 flex justify-between items-center border-l-4 border-danger-500;
+  }
+
+  .success-message {
+    @apply bg-green-50 text-green-900 px-4 py-3 rounded-lg mb-5 flex justify-between items-center border-l-4 border-success-500;
+  }
+
+  .form-input {
+    @apply w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm transition-colors duration-300 focus:outline-none focus:border-primary-500;
+  }
+
+  .form-select {
+    @apply w-full px-3 py-2 border-2 border-gray-300 rounded-lg bg-white text-sm transition-colors duration-300 focus:outline-none focus:border-primary-500;
+  }
+
+  .form-textarea {
+    @apply w-full px-3 py-2 border-2 border-gray-300 rounded-lg text-sm resize-vertical transition-colors duration-300 focus:outline-none focus:border-primary-500;
+  }
+}
