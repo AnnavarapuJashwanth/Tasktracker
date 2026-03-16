@@ -193,23 +193,24 @@ function Tasks({ adminPin }) {
       return;
     }
 
-    // Create citizen message with reference number and task details (NO PHOTO)
-    let citizenMessage = `🔔 *CITIZEN NOTIFICATION*
+    // Create formal grievance/task update message with reference number
+    let citizenMessage = `📋 *GRIEVANCE UPDATE*
 
 *Reference #:* ${task.referenceNumber || 'N/A'}
-*Task:* ${task.title}
+
+*Subject:* ${task.title}
 
 *Description:* ${task.description}
 
+*Status:* Your grievance/task has been ${task.status === 'Completed' ? 'resolved' : 'updated'}. Please verify and let us know if you need any further assistance.
+
 *Sector:* ${task.sector}
-
-*Status:* ${task.status}
-
 *Priority:* ${task.priority}
+*Due Date:* ${new Date(task.dueDate).toLocaleDateString()}
 
-*Due Date:* ${new Date(task.dueDate).toLocaleDateString()}`;
+Thank you for your patience. For any queries, please contact us.`;
 
-    // Show message preview modal for citizen notification (without photo)
+    // Show message preview modal for citizen notification
     setEditableMessage(citizenMessage);
     setSelectedPhoneForMessage(task.referencePhone);
     setShowMessageModal(true);
