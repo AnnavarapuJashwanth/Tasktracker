@@ -263,9 +263,28 @@ router.post('/:taskId/acknowledge-link', adminAuth, async (req, res) => {
     task.acknowledgementTokenExpiry = expiryDate;
     await task.save();
 
-    // Generate full URL (handle both localhost and production)
-    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    // Generate full URL (prefer env variable, fallback to request origin)
+    let baseUrl = process.env.FRONTEND_URL;
+    
+    if (!baseUrl) {
+      // Fallback: construct from request origin
+      const protocol = req.protocol || 'https';
+      const host = req.get('host');
+      
+      // For localhost, use production URL instead
+      if (host && (host.includes('localhost') || host.includes('127.0.0.1'))) {
+        baseUrl = 'https://tasktracker-4xm2.onrender.com';
+      } else {
+        baseUrl = `${protocol}://${host}`;
+      }
+    }
+    
+    // Ensure baseUrl doesn't have trailing slash
+    baseUrl = baseUrl.replace(/\/$/, '');
+    
     const acknowledgementUrl = `${baseUrl}/acknowledge/${req.params.taskId}/${token}`;
+
+    console.log('✅ Acknowledgement link generated:', acknowledgementUrl);
 
     res.json({ 
       message: 'Acknowledgement link generated successfully',
