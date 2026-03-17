@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaLock, FaWhatsapp, FaCheckCircle, FaInfo, FaSave } from 'react-icons/fa';
+import { settingsAPI } from '../api';
 
 function Settings() {
   const [adminPin, setAdminPin] = useState('');
@@ -13,8 +14,8 @@ function Settings() {
     // Load current PIN from backend (source of truth)
     const loadCurrentPin = async () => {
       try {
-        const response = await fetch('/api/settings/get');
-        const data = await response.json();
+        const response = await settingsAPI.getSettings();
+        const data = response.data;
         if (data.success) {
           setAdminPin(data.adminPin);
           localStorage.setItem('adminPin', data.adminPin);
@@ -52,16 +53,8 @@ function Settings() {
 
     try {
       setMessage('Updating PIN...');
-      const response = await fetch('/api/settings/update-pin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          currentPin: adminPin, 
-          newPin: newPin 
-        })
-      });
-      
-      const data = await response.json();
+      const response = await settingsAPI.updatePin(adminPin, newPin);
+      const data = response.data;
       
       if (data.success) {
         // Update localStorage

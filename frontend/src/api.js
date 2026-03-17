@@ -82,3 +82,12 @@ export const contactsAPI = {
   searchContacts: (query) =>
     axios.get(`${API_BASE_URL}/contacts/search/${query}`, getAuthHeader()),
 };
+
+export const settingsAPI = {
+  getSettings: () =>
+    axios.get(`${API_BASE_URL}/settings/get`),
+  updatePin: (currentPin, newPin) =>
+    axios.post(`${API_BASE_URL}/settings/update-pin`, { currentPin, newPin }),
+  updatePhone: (newPhone) =>
+    axios.post(`${API_BASE_URL}/settings/update-phone`, { adminPhone: newPhone }),
+};
