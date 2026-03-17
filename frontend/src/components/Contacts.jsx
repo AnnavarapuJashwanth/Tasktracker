@@ -4,9 +4,9 @@ import { contactsAPI } from '../api';
 
 // Sector/Department options
 const SECTORS = [
-  { id: 'vignan-university', label: 'Vignan University' },
-  { id: 'narasaraopet', label: 'Narasaraopet Region' },
-  { id: 'other', label: 'Other' },
+  { id: 'Vignan University', label: 'Vignan University' },
+  { id: 'Narasaraopet Region', label: 'Narasaraopet Region' },
+  { id: 'Other', label: 'Other' },
 ];
 
 function Contacts() {
