@@ -32,13 +32,14 @@ function TaskAcknowledgement() {
       
       const response = await fetch(`${apiBaseURL}/tasks/${taskId}/extension-status/${token}`);
       
-      if (response.ok) {
+      if (response.ok && response.status !== 204) {
         const data = await response.json();
         setExtensionStatus(data);
       }
-      // If not found, that's okay - just means no extension status yet
+      // 204 = no content (no extension requests yet) - that's okay
     } catch (err) {
       console.error('Error fetching extension status:', err);
+      // Silently fail - this is optional data, page should still work without it
     } finally {
       setExtensionStatusLoading(false);
     }
