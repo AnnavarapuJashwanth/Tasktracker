@@ -30,15 +30,19 @@ function TaskAcknowledgement() {
         ? 'https://tasktracker-4xm2.onrender.com/api'
         : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
       
-      const response = await fetch(`${apiBaseURL}/tasks/${taskId}/extension-status/${token}`);
+      const apiUrl = `${apiBaseURL}/tasks/${taskId}/extension-status/${token}`;
+      console.log('🔄 Fetching extension status from:', apiUrl);
+      
+      const response = await fetch(apiUrl);
       
       if (response.ok && response.status !== 204) {
         const data = await response.json();
+        console.log('✅ Extension status received:', data);
         setExtensionStatus(data);
       }
       // 204 = no content (no extension requests yet) - that's okay
     } catch (err) {
-      console.error('Error fetching extension status:', err);
+      console.error('⚠️ Error fetching extension status:', err);
       // Silently fail - this is optional data, page should still work without it
     } finally {
       setExtensionStatusLoading(false);
@@ -52,19 +56,39 @@ function TaskAcknowledgement() {
         ? 'https://tasktracker-4xm2.onrender.com/api'
         : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
       
-      const response = await fetch(`${apiBaseURL}/tasks/acknowledge/${token}`);
+      const apiUrl = `${apiBaseURL}/tasks/acknowledge/${token}`;
+      console.log('🔄 Fetching task from:', apiUrl);
+      console.log('📌 Token:', token);
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      console.log('📡 Response status:', response.status);
       
       if (!response.ok) {
+        const text = await response.text();
+        console.error('❌ API Error Response:', text);
+        
         if (response.status === 404) {
-          setError('Invalid acknowledgement link.');
+          setError('Invalid acknowledgement link. Task not found.');
         } else {
-          const errorData = await response.json();
-          setError(errorData.message || 'Failed to load task details');
+          try {
+            const errorData = JSON.parse(text);
+            setError(errorData.message || `Failed to load task (Error: ${response.status})`);
+          } catch {
+            setError(`Server error: ${response.status}`);
+          }
         }
         return;
       }
 
       const data = await response.json();
+      console.log('✅ Task data received:', data);
+      
       setTask(data);
       // Set default proposed deadline to current due date
       if (data.dueDate) {
@@ -75,8 +99,8 @@ function TaskAcknowledgement() {
       // Fetch extension status for this task
       await fetchExtensionStatus();
     } catch (err) {
-      console.error('Error fetching task:', err);
-      setError('Failed to connect to server. Please check your internet connection.');
+      console.error('❌ Error fetching task:', err);
+      setError('Failed to connect to server. Please try again or check your connection.');
     } finally {
       setLoading(false);
     }
@@ -136,24 +160,36 @@ function TaskAcknowledgement() {
         ? 'https://tasktracker-4xm2.onrender.com/api'
         : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
-      const response = await fetch(`${apiBaseURL}/tasks/acknowledge/${token}/complete`, {
+      const apiUrl = `${apiBaseURL}/tasks/acknowledge/${token}/complete`;
+      console.log('🔄 Marking task complete at:', apiUrl);
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
       });
 
+      console.log('📡 Mark complete response status:', response.status);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to mark task as complete');
+        const text = await response.text();
+        console.error('❌ Mark complete error:', text);
+        try {
+          const errorData = JSON.parse(text);
+          setError(errorData.message || 'Failed to mark task as complete');
+        } catch {
+          setError(`Error marking complete: ${response.status}`);
+        }
         return;
       }
 
       const data = await response.json();
+      console.log('✅ Task marked complete:', data);
       setSuccessMessage('✅ Task marked as complete! Thank you for finishing this task.');
       setTask({ ...task, status: 'Completed' });
     } catch (err) {
-      console.error('Error marking task complete:', err);
+      console.error('❌ Error marking task complete:', err);
       setError('Failed to mark task as complete. Please try again.');
     } finally {
       setSubmitting(false);
