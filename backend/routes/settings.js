@@ -1,5 +1,11 @@
 import express from 'express';
 import Settings from '../models/Settings.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
@@ -154,6 +160,55 @@ router.post('/update-phone', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error updating phone',
+      error: error.message,
+    });
+  }
+});
+
+// Sync PIN to .env file (for local development sync)
+router.post('/sync-env', async (req, res) => {
+  try {
+    let settings = await Settings.findOne();
+    
+    if (!settings) {
+      return res.status(404).json({
+        success: false,
+        message: 'Settings not found',
+      });
+    }
+
+    // Path to .env file
+    const envPath = path.join(__dirname, '../.env');
+    
+    // Read current .env file
+    let envContent = '';
+    if (fs.existsSync(envPath)) {
+      envContent = fs.readFileSync(envPath, 'utf8');
+    }
+
+    // Update or add ADMIN_PIN
+    if (envContent.includes('ADMIN_PIN=')) {
+      envContent = envContent.replace(/ADMIN_PIN=.*/g, `ADMIN_PIN=${settings.adminPin}`);
+    } else {
+      envContent += `\nADMIN_PIN=${settings.adminPin}`;
+    }
+
+    // Write back to .env file
+    fs.writeFileSync(envPath, envContent, 'utf8');
+
+    console.log('✅ .env file synced with PIN:', settings.adminPin);
+
+    res.json({
+      success: true,
+      message: 'PIN synced to .env file successfully',
+      pin: settings.adminPin,
+      file: envPath,
+    });
+  } catch (error) {
+    console.error('Error syncing to .env:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to sync PIN to .env file',
       error: error.message,
     });
   }

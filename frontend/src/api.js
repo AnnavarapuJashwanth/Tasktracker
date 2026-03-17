@@ -90,4 +90,6 @@ export const settingsAPI = {
     axios.post(`${API_BASE_URL}/settings/update-pin`, { currentPin, newPin }),
   updatePhone: (newPhone) =>
     axios.post(`${API_BASE_URL}/settings/update-phone`, { adminPhone: newPhone }),
+  syncEnv: () =>
+    axios.post(`${API_BASE_URL}/settings/sync-env`, {}),
 };
