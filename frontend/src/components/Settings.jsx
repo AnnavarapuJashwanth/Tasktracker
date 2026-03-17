@@ -61,13 +61,13 @@ function Settings() {
         localStorage.setItem('adminPin', newPin);
         setAdminPin(newPin);
         
-        // Database is now the source of truth - all backends will automatically use new PIN
-        // No need to sync .env files - database handles everything!
+        // Backend automatically syncs database and .env file
+        // All environments read from database first, fallback to .env if database unavailable
         
         // Dispatch custom event to update other components
         window.dispatchEvent(new CustomEvent('pinUpdated', { detail: { pin: newPin } }));
         
-        setMessage('✓ PIN updated successfully! All environments will automatically use the new PIN.');
+        setMessage('✓ PIN updated successfully! Changes take effect immediately across all devices.');
         setNewPin('');
         setConfirmPin('');
         setTimeout(() => setMessage(''), 3000);

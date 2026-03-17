@@ -5,7 +5,7 @@ import TaskForm from './TaskForm';
 import TaskCard from './TaskCard';
 import SessionTimer from './SessionTimer';
 
-function Tasks({ adminPin }) {
+function Tasks({ adminPin, selectedAssignee }) {
   const [tasks, setTasks] = useState([]);
   const [filteredTasks, setFilteredTasks] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -39,7 +39,7 @@ function Tasks({ adminPin }) {
 
   useEffect(() => {
     filterTasks();
-  }, [tasks, selectedStatus]);
+  }, [tasks, selectedStatus, selectedAssignee]);
 
   const loadTasks = async () => {
     setLoading(true);
@@ -62,9 +62,20 @@ function Tasks({ adminPin }) {
 
   const filterTasks = () => {
     let filtered = tasks;
-    if (selectedStatus !== 'all') {
-      filtered = tasks.filter((task) => task.status === selectedStatus);
+    
+    // Filter by assignee if selectedAssignee is set
+    // Check both assignedToContact (main field) and assignedTo (secondary field)
+    if (selectedAssignee) {
+      filtered = filtered.filter((task) => 
+        task.assignedToContact === selectedAssignee || task.assignedTo === selectedAssignee
+      );
     }
+    
+    // Filter by status
+    if (selectedStatus !== 'all') {
+      filtered = filtered.filter((task) => task.status === selectedStatus);
+    }
+    
     setFilteredTasks(filtered);
   };
 
@@ -455,7 +466,14 @@ ${photoUrl}`;
   return (
     <div className="animate-fadeIn">
       <div className="flex justify-between items-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-800">Tasks Management</h2>
+        <div>
+          <h2 className="text-3xl font-bold text-gray-800">Tasks Management</h2>
+          {selectedAssignee && (
+            <p className="text-lg text-blue-600 font-semibold mt-2">
+              📌 Showing tasks for: <span className="text-indigo-700">{selectedAssignee}</span>
+            </p>
+          )}
+        </div>
         <button className="btn-primary" onClick={() => setShowForm(!showForm)}>
           <FaPlus /> {showForm ? 'Cancel' : 'Create New Task'}
         </button>

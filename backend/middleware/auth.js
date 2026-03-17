@@ -10,9 +10,9 @@ export const adminAuth = async (req, res, next) => {
     let pinSource = 'default';
     
     try {
-      // DATABASE IS SOURCE OF TRUTH - Fetch PIN from database with timeout
+      // DATABASE IS SOURCE OF TRUTH - Fetch PIN from database with timeout (5 seconds)
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('DB timeout')), 2000)
+        setTimeout(() => reject(new Error('DB timeout')), 5000)
       );
       
       const dbFetch = Settings.findOne();

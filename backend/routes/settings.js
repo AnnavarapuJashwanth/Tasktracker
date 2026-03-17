@@ -1,5 +1,11 @@
 import express from 'express';
 import Settings from '../models/Settings.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const router = express.Router();
 
@@ -100,6 +106,28 @@ router.post('/update-pin', async (req, res) => {
     await settings.save();
 
     console.log('✅ PIN updated successfully in database');
+
+    // ALSO update .env file as fallback for database timeouts
+    try {
+      const envPath = path.join(__dirname, '../.env');
+      let envContent = '';
+      
+      if (fs.existsSync(envPath)) {
+        envContent = fs.readFileSync(envPath, 'utf8');
+      }
+
+      // Update or add ADMIN_PIN
+      if (envContent.includes('ADMIN_PIN=')) {
+        envContent = envContent.replace(/ADMIN_PIN=.*/g, `ADMIN_PIN=${newPin}`);
+      } else {
+        envContent += `\nADMIN_PIN=${newPin}`;
+      }
+
+      fs.writeFileSync(envPath, envContent, 'utf8');
+      console.log('✅ .env file updated with new PIN (fallback sync)');
+    } catch (envError) {
+      console.warn('⚠️  Could not update .env file:', envError.message);
+    }
 
     res.json({
       success: true,

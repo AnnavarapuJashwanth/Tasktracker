@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { FaClipboard, FaClock, FaCheckCircle, FaExclamation, FaChartLine, FaArrowUp, FaCalendar } from 'react-icons/fa';
-import { tasksAPI } from '../api';
+import { FaClipboard, FaClock, FaCheckCircle, FaExclamation, FaChartLine, FaArrowUp, FaCalendar, FaUser } from 'react-icons/fa';
+import { tasksAPI, contactsAPI } from '../api';
 
-function Dashboard({ adminPin }) {
+function Dashboard({ adminPin, onNavigateToTasks }) {
   const [stats, setStats] = useState({ total: 0, pending: 0, inProgress: 0, completed: 0 });
   const [todayTasks, setTodayTasks] = useState([]);
+  const [assigneeStats, setAssigneeStats] = useState([]); // New state for assignee data
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [mainCard, setMainCard] = useState('total'); // 'total', 'pending', 'inProgress', 'completed'
@@ -14,7 +15,8 @@ function Dashboard({ adminPin }) {
       loadStats();
     }, 100);
     
-    const interval = setInterval(loadStats, 30000);
+    // Only refresh once per minute to reduce unnecessary reloads
+    const interval = setInterval(loadStats, 60000);
     return () => {
       clearTimeout(timer);
       clearInterval(interval);
@@ -34,6 +36,21 @@ function Dashboard({ adminPin }) {
       const response = await tasksAPI.getStats();
       setStats(response.data);
       
+      // Fetch all contacts for phone number lookup
+      let contactsMap = new Map();
+      try {
+        const contactsResponse = await contactsAPI.getAllContacts();
+        if (contactsResponse.data && Array.isArray(contactsResponse.data)) {
+          contactsResponse.data.forEach(contact => {
+            // Store both exact name match and lowercase match
+            contactsMap.set(contact.name, contact.phone);
+            contactsMap.set(contact.name.toLowerCase(), contact.phone);
+          });
+        }
+      } catch (contactErr) {
+        console.warn('Could not fetch contacts:', contactErr.message);
+      }
+      
       // Fetch today's tasks
       const allTasks = await tasksAPI.getAllTasks();
       const today = new Date();
@@ -49,6 +66,57 @@ function Dashboard({ adminPin }) {
         .slice(0, 10); // Show last 10 tasks from today
       
       setTodayTasks(todayTasksList);
+
+      // GROUP TASKS BY ASSIGNEE
+      const assigneeMap = new Map();
+      allTasks.data.forEach(task => {
+        // Use assignedToContact since that's what gets set during task creation
+        const assigneeName = task.assignedToContact || task.assignedTo;
+        
+        if (assigneeName) {
+          if (!assigneeMap.has(assigneeName)) {
+            // Try to get phone number from multiple sources
+            let phone = task.assignedToPhone || task.referencePhone;
+            
+            // If no phone, try to extract from assignedToContact (format: "Name (+91...)")
+            if (!phone && task.assignedToContact) {
+              const phoneMatch = task.assignedToContact.match(/\(\+[\d\s\-]+\)/);
+              if (phoneMatch) {
+                phone = phoneMatch[0].replace(/[^\d+]/g, '');
+              }
+            }
+            
+            // If still no phone, look up from contacts database
+            if (!phone) {
+              const contactPhone = contactsMap.get(assigneeName) || contactsMap.get(assigneeName.toLowerCase());
+              if (contactPhone) {
+                phone = contactPhone;
+              }
+            }
+            
+            assigneeMap.set(assigneeName, {
+              name: assigneeName,
+              phone: phone || 'N/A',
+              sector: task.sector || 'N/A',
+              total: 0,
+              pending: 0,
+              inProgress: 0,
+              completed: 0,
+            });
+          }
+          const assignee = assigneeMap.get(assigneeName);
+          assignee.total += 1;
+          if (task.status === 'Pending') assignee.pending += 1;
+          else if (task.status === 'In Progress') assignee.inProgress += 1;
+          else if (task.status === 'Completed') assignee.completed += 1;
+        }
+      });
+
+      // Convert map to array and sort by total tasks (descending)
+      const assigneeArray = Array.from(assigneeMap.values())
+        .sort((a, b) => b.total - a.total);
+      
+      setAssigneeStats(assigneeArray);
       setError('');
       setLoading(false);
     } catch (err) {
@@ -64,6 +132,13 @@ function Dashboard({ adminPin }) {
   };
 
   const completionRate = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
+
+  const handleAssigneeClick = (assigneeName) => {
+    // Navigate to Tasks with assignee filter
+    if (onNavigateToTasks) {
+      onNavigateToTasks(assigneeName);
+    }
+  };
 
   if (loading) {
     return (
@@ -450,6 +525,98 @@ function Dashboard({ adminPin }) {
                         <span className="text-xs text-amber-700 font-bold">Pending</span>
                       </div>
                     )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Works by Assignee Section */}
+      <div className="mt-12 mb-10">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <FaUser className="text-blue-600 text-2xl" />
+            <h2 className="text-2xl font-bold text-gray-900">Works by Assignee</h2>
+          </div>
+          <span className="bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-semibold">
+            {assigneeStats.length} assignees
+          </span>
+        </div>
+
+        {assigneeStats.length === 0 ? (
+          <div className="bg-white rounded-2xl p-12 shadow-md text-center">
+            <p className="text-gray-500 text-lg">No tasks assigned yet</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {assigneeStats.map((assignee) => (
+              <div
+                key={assignee.name}
+                onClick={() => handleAssigneeClick(assignee.name)}
+                className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-all cursor-pointer border-l-4 border-blue-500"
+              >
+                <div className="flex items-start justify-between">
+                  {/* Left: Assignee Info */}
+                  <div className="flex items-start gap-4 flex-1">
+                    {/* Avatar */}
+                    <div className="bg-blue-500 text-white rounded-full w-14 h-14 flex items-center justify-center font-bold text-xl flex-shrink-0 shadow-sm">
+                      {assignee.name.charAt(0).toUpperCase()}
+                    </div>
+                    
+                    {/* Name and Details */}
+                    <div className="flex-1">
+                      <h3 className="text-lg font-bold text-gray-900">{assignee.name}</h3>
+                      
+                      {/* Phone - Clean Display */}
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-gray-400">📱</span>
+                        <p className="text-sm font-semibold text-gray-700">{assignee.phone}</p>
+                      </div>
+                      
+                      {/* Sector - Clean Display */}
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-gray-400">🏢</span>
+                        <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded font-medium">{assignee.sector}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right: Task Counts */}
+                  <div className="flex items-center gap-4 ml-4 flex-shrink-0">
+                    {/* Total */}
+                    <div className="text-center">
+                      <p className="text-4xl font-bold text-blue-600">{assignee.total}</p>
+                      <p className="text-gray-600 text-xs uppercase font-semibold">Total</p>
+                    </div>
+
+                    {/* Status Breakdown - Clean Cards */}
+                    <div className="flex gap-2">
+                      {/* Pending */}
+                      {assignee.pending > 0 && (
+                        <div className="text-center border border-amber-200 rounded-lg px-2 py-1 bg-amber-50">
+                          <p className="text-lg font-bold text-amber-600">{assignee.pending}</p>
+                          <p className="text-amber-700 text-xs font-semibold">Pending</p>
+                        </div>
+                      )}
+
+                      {/* In Progress */}
+                      {assignee.inProgress > 0 && (
+                        <div className="text-center border border-blue-200 rounded-lg px-2 py-1 bg-blue-50">
+                          <p className="text-lg font-bold text-blue-600">{assignee.inProgress}</p>
+                          <p className="text-blue-700 text-xs font-semibold">In Prog</p>
+                        </div>
+                      )}
+
+                      {/* Completed */}
+                      {assignee.completed > 0 && (
+                        <div className="text-center border border-green-200 rounded-lg px-2 py-1 bg-green-50">
+                          <p className="text-lg font-bold text-green-600">{assignee.completed}</p>
+                          <p className="text-green-700 text-xs font-semibold">Done</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

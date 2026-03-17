@@ -75,6 +75,7 @@ function TaskForm({ onSubmit, onCancel, editingTask }) {
       ...prev,
       assignedToContactId: contactId,
       assignedToContact: selectedContact ? selectedContact.name : '',
+      referencePhone: selectedContact ? selectedContact.phone : '', // Capture phone from contact
     }));
   };
 

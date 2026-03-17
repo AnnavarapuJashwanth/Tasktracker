@@ -14,6 +14,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [adminPin, setAdminPin] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [selectedAssignee, setSelectedAssignee] = useState(null); // New state for assignee filtering
 
   // Check if we're on acknowledgement page
   const isAcknowledgementPage = window.location.pathname.startsWith('/acknowledge/');
@@ -74,6 +75,16 @@ function App() {
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setSidebarOpen(false); // Close sidebar on mobile when tab is clicked
+    // Reset assignee filter when navigating away from tasks
+    if (tab !== 'tasks') {
+      setSelectedAssignee(null);
+    }
+  };
+
+  const handleNavigateToTasksByAssignee = (assigneeName) => {
+    setSelectedAssignee(assigneeName);
+    setActiveTab('tasks');
+    setSidebarOpen(false); // Close sidebar on mobile
   };
 
   // Show acknowledgement page if URL matches the pattern
@@ -211,8 +222,8 @@ function App() {
 
       {/* Main Content - Responsive */}
       <main className="lg:ml-72 flex-1 p-4 lg:p-8 overflow-y-auto w-full pt-16 lg:pt-0">
-        {activeTab === 'dashboard' && <Dashboard adminPin={adminPin} />}
-        {activeTab === 'tasks' && <Tasks adminPin={adminPin} />}
+        {activeTab === 'dashboard' && <Dashboard adminPin={adminPin} onNavigateToTasks={handleNavigateToTasksByAssignee} />}
+        {activeTab === 'tasks' && <Tasks adminPin={adminPin} selectedAssignee={selectedAssignee} />}
         {activeTab === 'contacts' && <Contacts />}
         {activeTab === 'notifications' && <Notifications />}
         {activeTab === 'history' && <TaskHistory />}
