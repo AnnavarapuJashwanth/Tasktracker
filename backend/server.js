@@ -83,11 +83,22 @@ if (fs.existsSync(frontendDistPath)) {
   // Serve static files from the frontend dist folder
   app.use(express.static(frontendDistPath, {
     maxAge: '1y',
-    etag: false
+    etag: true,
+    setHeaders: (res, servedPath) => {
+      // Never cache HTML entry points so users always get latest JS bundle references.
+      if (servedPath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+      }
+    }
   }));
   
   // SPA fallback: serve index.html for all non-API routes
   app.get(/^\/(?!api\/)/, (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.sendFile(path.join(frontendDistPath, 'index.html'));
   });
 } else {
