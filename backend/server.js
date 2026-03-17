@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import connectDB, { getDBStatus } from './config/db.js';
 import authRoutes from './routes/auth.js';
@@ -74,8 +75,27 @@ app.use('/api/tasks', tasksRoutes);
 app.use('/api/contacts', contactsRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 
-// Root endpoint
-app.get('/', (req, res) => {
+// Serve the frontend build in production
+// Check if frontend dist folder exists
+const frontendDistPath = path.join(__dirname, '..', 'frontend', 'dist');
+if (fs.existsSync(frontendDistPath)) {
+  console.log('📦 Serving frontend from:', frontendDistPath);
+  // Serve static files from the frontend dist folder
+  app.use(express.static(frontendDistPath, {
+    maxAge: '1y',
+    etag: false
+  }));
+  
+  // SPA fallback: serve index.html for all non-API routes
+  app.get(/^\/(?!api\/)/, (req, res) => {
+    res.sendFile(path.join(frontendDistPath, 'index.html'));
+  });
+} else {
+  console.log('⚠️  Frontend dist folder not found at:', frontendDistPath);
+}
+
+// Root API endpoint
+app.get('/api', (req, res) => {
   res.json({
     message: '✅ Backend is running successfully!',
     status: 'active',
@@ -89,6 +109,20 @@ app.get('/', (req, res) => {
       auth: '/api/auth/login'
     }
   });
+});
+
+// Root endpoint (HTML fallback)
+app.get('/', (req, res) => {
+  if (fs.existsSync(frontendDistPath)) {
+    res.sendFile(path.join(frontendDistPath, 'index.html'));
+  } else {
+    res.json({
+      message: '✅ Backend is running successfully!',
+      status: 'active',
+      version: '1.0.0',
+      database: 'MongoDB Atlas Connected'
+    });
+  }
 });
 
 // Health check
