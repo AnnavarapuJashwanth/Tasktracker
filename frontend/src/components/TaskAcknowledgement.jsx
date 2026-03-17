@@ -20,6 +20,10 @@ function TaskAcknowledgement() {
   const [taskProgress, setTaskProgress] = useState(null); // Track task progress: null, 'in-progress', '50-percent', 'completed'
 
   useEffect(() => {
+    console.log('🚀 TaskAcknowledgement component mounted');
+    console.log('📌 URL Path:', window.location.pathname);
+    console.log('📌 Task ID:', taskId);
+    console.log('📌 Token:', token);
     fetchTaskDetails();
   }, [token]);
 
