@@ -284,6 +284,9 @@ function TaskAcknowledgement() {
     );
   }
 
+  const normalizedStatus = String(task.status || '').toLowerCase();
+  const isCompleted = normalizedStatus === 'completed';
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div className="max-w-2xl mx-auto">
@@ -299,16 +302,16 @@ function TaskAcknowledgement() {
           <p className="text-center text-emerald-50 mb-4">If this task is finished, mark it complete now.</p>
           <button
             onClick={handleMarkComplete}
-            disabled={submitting || task.status === 'Completed'}
+            disabled={submitting || isCompleted}
             className={`w-full px-6 py-4 rounded-lg font-bold text-lg transition-all flex items-center justify-center gap-2 ${
-              task.status === 'Completed'
+              isCompleted
                 ? 'bg-gray-400 text-white cursor-not-allowed'
                 : 'bg-white text-emerald-700 hover:bg-emerald-50 shadow-md hover:shadow-lg'
             } disabled:opacity-60 disabled:cursor-not-allowed`}
           >
             {submitting ? '⏳ Marking...' : '✅ Mark Task as Complete'}
           </button>
-          {task.status === 'Completed' && (
+          {isCompleted && (
             <p className="text-center text-emerald-50 font-semibold mt-3">This task is already marked as completed.</p>
           )}
         </div>
@@ -316,13 +319,31 @@ function TaskAcknowledgement() {
         {/* Task Card */}
         <div className="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
           {/* Status Banner */}
-          <div className={`px-6 py-4 ${task.status === 'Completed' ? 'bg-green-500' : 'bg-blue-500'}`}>
+          <div className={`px-6 py-4 ${isCompleted ? 'bg-green-500' : 'bg-blue-500'}`}>
             <p className="text-white font-semibold text-lg">
               Status: {task.status}
             </p>
           </div>
 
-          {task.status === 'Completed' && (
+          {/* Always-visible action bar inside task card */}
+          <div className={`mx-6 mt-4 p-4 rounded-lg border ${isCompleted ? 'border-green-300 bg-green-50' : 'border-blue-300 bg-blue-50'}`}>
+            <p className={`text-center font-bold mb-3 ${isCompleted ? 'text-green-700' : 'text-blue-700'}`}>
+              {isCompleted ? '✅ This task is completed' : '⏳ This task is pending. You can mark it as complete below.'}
+            </p>
+            <button
+              onClick={handleMarkComplete}
+              disabled={submitting || isCompleted}
+              className={`w-full px-6 py-3 rounded-lg font-bold transition-all ${
+                isCompleted
+                  ? 'bg-gray-400 text-white cursor-not-allowed'
+                  : 'bg-green-600 text-white hover:bg-green-700 shadow-md'
+              } disabled:opacity-60 disabled:cursor-not-allowed`}
+            >
+              {submitting ? '⏳ Marking...' : isCompleted ? '✅ Already Completed' : '✅ Mark This Task Complete'}
+            </button>
+          </div>
+
+          {isCompleted && (
             <div className="mx-6 mt-4 p-4 rounded-lg border border-green-300 bg-green-50">
               <p className="text-green-700 font-bold text-center">✅ This task is completed</p>
             </div>
@@ -536,9 +557,9 @@ function TaskAcknowledgement() {
               <h3 className="text-center text-emerald-800 font-bold text-lg mb-4">Task Completed?</h3>
               <button
                 onClick={handleMarkComplete}
-                disabled={submitting || task.status === 'Completed'}
+                disabled={submitting || isCompleted}
                 className={`w-full px-6 py-4 rounded-lg font-bold text-xl transition-all flex items-center justify-center gap-3 ${
-                  task.status === 'Completed'
+                  isCompleted
                     ? 'bg-gray-500 text-white cursor-not-allowed'
                     : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg hover:shadow-xl'
                 } disabled:opacity-60 disabled:cursor-not-allowed`}
@@ -551,7 +572,7 @@ function TaskAcknowledgement() {
                   </>
                 )}
               </button>
-              {task.status === 'Completed' && (
+              {isCompleted && (
                 <p className="text-center text-emerald-800 font-bold mt-3">Task already completed.</p>
               )}
             </div>
