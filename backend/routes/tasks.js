@@ -295,14 +295,20 @@ router.post('/:taskId/acknowledge-link', adminAuth, async (req, res) => {
 // Get task details for acknowledgement (public endpoint - no auth needed)
 router.get('/acknowledge/:token', async (req, res) => {
   try {
+    const token = req.params.token;
+    console.log('📥 [ACKNOWLEDGE] Received request for token:', token.substring(0, 20) + '...');
+    
     const task = await Task.findOne({ 
-      acknowledgementToken: req.params.token
+      acknowledgementToken: token
     });
 
     if (!task) {
-      return res.status(404).json({ message: 'Invalid acknowledgement link' });
+      console.log('❌ [ACKNOWLEDGE] Task not found for token:', token.substring(0, 20) + '...');
+      return res.status(404).json({ message: 'Invalid acknowledgement link. Task not found in database.' });
     }
 
+    console.log('✅ [ACKNOWLEDGE] Task found:', task._id, '- Title:', task.title);
+    
     // Return task details (minimal info for public view) - INCLUDING CATEGORY
     res.json({
       _id: task._id,
@@ -319,6 +325,7 @@ router.get('/acknowledge/:token', async (req, res) => {
       updatedAt: task.updatedAt
     });
   } catch (error) {
+    console.error('❌ [ACKNOWLEDGE] Error retrieving task:', error.message);
     res.status(500).json({ message: 'Error retrieving task', error: error.message });
   }
 });
