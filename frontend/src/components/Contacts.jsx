@@ -2,6 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { FaPhone, FaPlus, FaTrash, FaEdit, FaWhatsapp, FaTimes } from 'react-icons/fa';
 import { contactsAPI } from '../api';
 
+// Sector/Department options
+const SECTORS = [
+  { id: 'vignan-university', label: 'Vignan University' },
+  { id: 'narasaraopet', label: 'Narasaraopet Region' },
+  { id: 'other', label: 'Other' },
+];
+
 function Contacts() {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -9,10 +16,11 @@ function Contacts() {
   const [successMessage, setSuccessMessage] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingContact, setEditingContact] = useState(null);
+  const [selectedSectorFilter, setSelectedSectorFilter] = useState('all'); // 'all' or sector id
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
-    department: '',
+    department: '', // This will hold the sector
     email: '',
     status: 'active',
     notes: '',
@@ -127,6 +135,16 @@ function Contacts() {
     return colors[name.charCodeAt(0) % colors.length];
   };
 
+  // Get sector label from id
+  const getSectorLabel = (sectorId) => {
+    return SECTORS.find(s => s.id === sectorId)?.label || sectorId || '-';
+  };
+
+  // Filter contacts by selected sector
+  const filteredContacts = selectedSectorFilter === 'all' 
+    ? contacts 
+    : contacts.filter(c => c.department === selectedSectorFilter);
+
   const closeForm = () => {
     setShowForm(false);
     setEditingContact(null);
@@ -148,6 +166,36 @@ function Contacts() {
       {error && <div className="bg-red-100 border-l-4 border-red-600 p-3 md:p-4 mb-4 md:mb-6 rounded"><p className="text-red-900 font-semibold text-sm md:text-base">{error}</p></div>}
       {successMessage && <div className="bg-green-100 border-l-4 border-green-600 p-3 md:p-4 mb-4 md:mb-6 rounded"><p className="text-green-900 font-semibold text-sm md:text-base">{successMessage}</p></div>}
 
+      {/* Sector Filter */}
+      <div className="mb-6 md:mb-8 bg-white rounded-lg shadow-md p-4 md:p-6 border-l-4 border-purple-600">
+        <label className="block text-xs md:text-sm font-bold text-gray-700 mb-2 md:mb-3">Filter by Sector</label>
+        <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
+          <button
+            onClick={() => setSelectedSectorFilter('all')}
+            className={`flex-1 px-3 md:px-4 py-2 rounded-lg font-semibold text-sm md:text-base transition-colors ${
+              selectedSectorFilter === 'all'
+                ? 'bg-purple-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            All Sectors
+          </button>
+          {SECTORS.map(sector => (
+            <button
+              key={sector.id}
+              onClick={() => setSelectedSectorFilter(sector.id)}
+              className={`flex-1 px-3 md:px-4 py-2 rounded-lg font-semibold text-sm md:text-base transition-colors ${
+                selectedSectorFilter === sector.id
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {sector.label} ({contacts.filter(c => c.department === sector.id).length})
+            </button>
+          ))}
+        </div>
+      </div>
+
       {showForm && (
         <div className="mb-6 md:mb-8 bg-white rounded-lg shadow-lg p-4 md:p-8 border-t-4 border-blue-600 overflow-x-hidden">
           <form onSubmit={handleSaveContact} className="space-y-3 md:space-y-4">
@@ -161,8 +209,13 @@ function Contacts() {
                 <input type="tel" name="phone" value={formData.phone} onChange={handleFormChange} className="w-full px-3 md:px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-600 outline-none text-sm md:text-base" placeholder="+919876543210" required />
               </div>
               <div>
-                <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1 md:mb-2">Department</label>
-                <input type="text" name="department" value={formData.department} onChange={handleFormChange} className="w-full px-3 md:px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-600 outline-none text-sm md:text-base" placeholder="Department" />
+                <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1 md:mb-2">Sector *</label>
+                <select name="department" value={formData.department} onChange={handleFormChange} className="w-full px-3 md:px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-600 outline-none text-sm md:text-base" required>
+                  <option value="">Select Sector</option>
+                  {SECTORS.map(sector => (
+                    <option key={sector.id} value={sector.id}>{sector.label}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1 md:mb-2">Email</label>
@@ -191,29 +244,29 @@ function Contacts() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-10">
         <div className="bg-white rounded-lg p-4 md:p-6 shadow-md border-l-4 border-blue-600">
           <p className="text-gray-600 text-xs md:text-sm font-bold uppercase mb-2">Total Staff</p>
-          <p className="text-3xl md:text-4xl font-bold text-blue-600">{contacts.length}</p>
+          <p className="text-3xl md:text-4xl font-bold text-blue-600">{filteredContacts.length}</p>
         </div>
         <div className="bg-white rounded-lg p-4 md:p-6 shadow-md border-l-4 border-green-600">
           <p className="text-gray-600 text-xs md:text-sm font-bold uppercase mb-2">Active</p>
-          <p className="text-3xl md:text-4xl font-bold text-green-600">{contacts.filter((c) => c.status === 'active').length}</p>
+          <p className="text-3xl md:text-4xl font-bold text-green-600">{filteredContacts.filter((c) => c.status === 'active').length}</p>
         </div>
         <div className="bg-white rounded-lg p-4 md:p-6 shadow-md border-l-4 border-amber-600">
           <p className="text-gray-600 text-xs md:text-sm font-bold uppercase mb-2">Inactive</p>
-          <p className="text-3xl md:text-4xl font-bold text-amber-600">{contacts.filter((c) => c.status === 'inactive').length}</p>
+          <p className="text-3xl md:text-4xl font-bold text-amber-600">{filteredContacts.filter((c) => c.status === 'inactive').length}</p>
         </div>
       </div>
 
-      {loading ? <p className="text-center text-gray-500 py-8">Loading...</p> : contacts.length === 0 ? <div className="bg-white rounded-lg p-8 md:p-12 text-center shadow-md"><p className="text-gray-500">No contacts found</p></div> : (
+      {loading ? <p className="text-center text-gray-500 py-8">Loading...</p> : filteredContacts.length === 0 ? <div className="bg-white rounded-lg p-8 md:p-12 text-center shadow-md"><p className="text-gray-500">No contacts found</p></div> : (
         <>
           {/* Mobile Card View */}
           <div className="md:hidden space-y-4">
-            {contacts.map((c) => (
+            {filteredContacts.map((c) => (
               <div key={c._id} className="bg-white rounded-lg shadow-md p-4 border-l-4 border-blue-600">
                 <div className="flex items-center gap-3 mb-3">
                   <div className={`${getAvatarColor(c.name)} text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm`}>{getInitials(c.name)}</div>
                   <div className="flex-1">
                     <p className="font-semibold text-gray-900">{c.name}</p>
-                    <p className="text-xs text-gray-500">{c.department || 'No Department'}</p>
+                    <p className="text-xs text-gray-500">{getSectorLabel(c.department)}</p>
                   </div>
                   <span className={`px-2 py-1 rounded-full text-xs font-bold whitespace-nowrap ${c.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>● {c.status}</span>
                 </div>
@@ -246,18 +299,18 @@ function Contacts() {
                 <tr>
                   <th className="px-6 py-4 text-left text-sm font-bold">Name</th>
                   <th className="px-6 py-4 text-left text-sm font-bold">Phone</th>
-                  <th className="px-6 py-4 text-left text-sm font-bold">Department</th>
+                  <th className="px-6 py-4 text-left text-sm font-bold">Sector</th>
                   <th className="px-6 py-4 text-left text-sm font-bold">Email</th>
                   <th className="px-6 py-4 text-left text-sm font-bold">Status</th>
                   <th className="px-6 py-4 text-center text-sm font-bold">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {contacts.map((c, i) => (
+                {filteredContacts.map((c, i) => (
                   <tr key={c._id} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                     <td className="px-6 py-4"><div className="flex items-center gap-3"><div className={`${getAvatarColor(c.name)} text-white w-10 h-10 rounded-full flex items-center justify-center font-bold`}>{getInitials(c.name)}</div><span className="font-semibold">{c.name}</span></div></td>
                     <td className="px-6 py-4">{c.phone}</td>
-                    <td className="px-6 py-4"><span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">{c.department || '-'}</span></td>
+                    <td className="px-6 py-4"><span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-semibold">{getSectorLabel(c.department)}</span></td>
                     <td className="px-6 py-4">{c.email || '-'}</td>
                     <td className="px-6 py-4"><span className={`px-3 py-1 rounded-full text-sm font-bold ${c.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>● {c.status}</span></td>
                     <td className="px-6 py-4"><div className="flex justify-center gap-3"><a href={`tel:${c.phone}`} className="p-2 hover:bg-teal-100 rounded text-teal-600" title="Call contact"><FaPhone /></a><button onClick={() => handleWhatsAppClick(c)} className="p-2 hover:bg-green-100 rounded text-green-600"><FaWhatsapp /></button><button onClick={() => handleEditContact(c)} className="p-2 hover:bg-blue-100 rounded text-blue-600"><FaEdit /></button><button onClick={() => handleDeleteContact(c._id)} className="p-2 hover:bg-red-100 rounded text-red-600"><FaTrash /></button></div></td>
