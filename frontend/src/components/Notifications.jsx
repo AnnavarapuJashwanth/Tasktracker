@@ -100,80 +100,86 @@ function Notifications() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <FaBell className="text-2xl text-blue-600" />
-          <h2 className="text-2xl font-bold text-gray-800">Notifications</h2>
+      <div className="space-y-4">
+        <h2 className="text-3xl font-bold text-gray-800">Extension Requests</h2>
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <FaBell className="text-2xl text-blue-600" />
+            <p className="text-gray-500">Loading notifications...</p>
+          </div>
         </div>
-        <p className="text-gray-500">Loading...</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 max-h-96 overflow-y-auto">
-      <div className="flex items-center gap-2 mb-4">
-        <FaBell className="text-2xl text-blue-600" />
-        <h2 className="text-2xl font-bold text-gray-800">
-          Extension Requests 
-          {notifications.length > 0 && (
-            <span className="ml-2 inline-block bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-              {notifications.length}
-            </span>
-          )}
-        </h2>
-      </div>
-
-      {error && (
-        <div className="p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded mb-4">
-          {error}
+    <div className="space-y-4">
+      <h2 className="text-3xl font-bold text-gray-800">Extension Requests</h2>
+      
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <FaBell className="text-2xl text-blue-600" />
+          <h3 className="text-xl font-bold text-gray-800">
+            Pending Requests 
+            {notifications.length > 0 && (
+              <span className="ml-2 inline-block bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                {notifications.length}
+              </span>
+            )}
+          </h3>
         </div>
-      )}
 
-      {notifications.length === 0 ? (
-        <p className="text-gray-500 text-center py-8">No pending extension requests</p>
-      ) : (
-        <div className="space-y-3">
-          {notifications.map((notif, idx) => (
-            <div
-              key={`${notif._id}-${idx}`}
-              className="border-l-4 border-orange-500 bg-orange-50 p-4 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => setSelectedTask(notif)}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-bold text-gray-800 text-sm">{notif.taskTitle}</h3>
-                  <p className="text-xs text-gray-600 mt-1">
-                    <FaPhone className="inline mr-1" />
-                    {notif.assignedToContact} ({notif.assignedToPhone})
-                  </p>
-                  <p className="text-xs text-gray-600 mt-1">
-                    <strong>Request:</strong> {notif.message.substring(0, 50)}...
-                  </p>
-                  <p className="text-xs text-orange-700 font-semibold mt-2">
-                    Current Due: {new Date(notif.currentDueDate).toLocaleDateString('en-IN')}
-                    {notif.requestedDeadlineExtension && (
-                      <>
-                        {' → '}
-                        Proposed: {new Date(notif.requestedDeadlineExtension).toLocaleDateString('en-IN')}
-                      </>
-                    )}
-                  </p>
+        {error && (
+          <div className="p-3 bg-red-50 border-l-4 border-red-500 text-red-700 rounded mb-4">
+            {error}
+          </div>
+        )}
+
+        {notifications.length === 0 ? (
+          <p className="text-gray-500 text-center py-8">No pending extension requests</p>
+        ) : (
+          <div className="space-y-4">
+            {notifications.map((notif, idx) => (
+              <div
+                key={`${notif._id}-${idx}`}
+                className="border-l-4 border-orange-500 bg-orange-50 p-4 rounded-lg hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => setSelectedTask(notif)}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="font-bold text-gray-800 text-sm">{notif.taskTitle}</h3>
+                    <p className="text-xs text-gray-600 mt-1">
+                      <FaPhone className="inline mr-1" />
+                      {notif.assignedToContact} ({notif.assignedToPhone})
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">
+                      <strong>Request:</strong> {notif.message.substring(0, 50)}...
+                    </p>
+                    <p className="text-xs text-orange-700 font-semibold mt-2">
+                      Current Due: {new Date(notif.currentDueDate).toLocaleDateString('en-IN')}
+                      {notif.requestedDeadlineExtension && (
+                        <>
+                          {' → '}
+                          Proposed: {new Date(notif.requestedDeadlineExtension).toLocaleDateString('en-IN')}
+                        </>
+                      )}
+                    </p>
+                  </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedTask(notif);
+                    }}
+                    className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded font-semibold"
+                  >
+                    <FaEdit className="inline mr-1" /> Review
+                  </button>
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedTask(notif);
-                  }}
-                  className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded font-semibold"
-                >
-                  <FaEdit className="inline mr-1" /> Review
-                </button>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
       )}
+      </div>
 
       {/* Modal for detailed view */}
       {selectedTask && (
