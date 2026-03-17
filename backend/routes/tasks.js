@@ -314,7 +314,9 @@ router.get('/acknowledge/:token', async (req, res) => {
       dueDate: task.dueDate,
       assignedToContact: task.assignedToContact,
       status: task.status,
-      photo: task.photo
+      photo: task.photo,
+      createdAt: task.createdAt,
+      updatedAt: task.updatedAt
     });
   } catch (error) {
     res.status(500).json({ message: 'Error retrieving task', error: error.message });
