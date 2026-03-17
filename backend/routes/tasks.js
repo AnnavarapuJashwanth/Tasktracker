@@ -406,4 +406,131 @@ router.use((err, req, res, next) => {
   next();
 });
 
+// ===== EXTENSION REQUEST ENDPOINTS =====
+
+// Submit extension request (from acknowledgement page)
+router.post('/:taskId/extension-request/:token', async (req, res) => {
+  try {
+    const { message, requestedDeadline } = req.body;
+    const { taskId, token } = req.params;
+
+    const task = await Task.findById(taskId);
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    // Verify token is valid
+    if (task.acknowledgementToken !== token) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    // Add extension request
+    const extensionRequest = {
+      message,
+      requestedBy: task.assignedToContact,
+      requestedPhone: task.assignedToPhone,
+      requestedDeadlineExtension: requestedDeadline || task.dueDate,
+      status: 'pending',
+      requestedAt: new Date(),
+    };
+
+    task.extensionRequests.push(extensionRequest);
+    await task.save();
+
+    console.log('✅ Extension request submitted for task:', taskId);
+    res.json({
+      message: 'Extension request submitted successfully',
+      extensionRequest,
+    });
+  } catch (error) {
+    console.error('Error submitting extension request:', error);
+    res.status(500).json({ message: 'Error submitting extension request', error: error.message });
+  }
+});
+
+// Get all extension requests (admin only)
+router.get('/extension-requests/all', adminAuth, async (req, res) => {
+  try {
+    const tasks = await Task.find({ 'extensionRequests.0': { $exists: true } })
+      .sort({ 'extensionRequests.requestedAt': -1 });
+
+    // Flatten extension requests with task info
+    const allRequests = [];
+    tasks.forEach((task) => {
+      if (task.extensionRequests && task.extensionRequests.length > 0) {
+        task.extensionRequests.forEach((request) => {
+          if (request.status === 'pending') {
+            allRequests.push({
+              _id: task._id,
+              taskTitle: task.title,
+              taskDescription: task.description,
+              assignedToContact: task.assignedToContact,
+              assignedToPhone: task.assignedToPhone,
+              currentDueDate: task.dueDate,
+              priority: task.priority,
+              category: task.category,
+              sector: task.sector,
+              ...request.toObject(),
+            });
+          }
+        });
+      }
+    });
+
+    res.json(allRequests);
+  } catch (error) {
+    console.error('Error fetching extension requests:', error);
+    res.status(500).json({ message: 'Error fetching extension requests', error: error.message });
+  }
+});
+
+// Approve extension request (admin only)
+router.post('/extension-requests/:taskId/approve', adminAuth, async (req, res) => {
+  try {
+    const { requestIndex } = req.body;
+    const task = await Task.findById(req.params.taskId);
+
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    if (!task.extensionRequests[requestIndex]) {
+      return res.status(404).json({ message: 'Extension request not found' });
+    }
+
+    task.extensionRequests[requestIndex].status = 'approved';
+    task.dueDate = task.extensionRequests[requestIndex].requestedDeadlineExtension;
+    await task.save();
+
+    res.json({ message: 'Extension approved', task });
+  } catch (error) {
+    console.error('Error approving extension:', error);
+    res.status(500).json({ message: 'Error approving extension', error: error.message });
+  }
+});
+
+// Reject extension request (admin only)
+router.post('/extension-requests/:taskId/reject', adminAuth, async (req, res) => {
+  try {
+    const { requestIndex } = req.body;
+    const task = await Task.findById(req.params.taskId);
+
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    if (!task.extensionRequests[requestIndex]) {
+      return res.status(404).json({ message: 'Extension request not found' });
+    }
+
+    task.extensionRequests[requestIndex].status = 'rejected';
+    await task.save();
+
+    res.json({ message: 'Extension rejected', task });
+  } catch (error) {
+    console.error('Error rejecting extension:', error);
+    res.status(500).json({ message: 'Error rejecting extension', error: error.message });
+  }
+});
+
 export default router;

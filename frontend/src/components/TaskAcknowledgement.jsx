@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FaCheck, FaExclamationTriangle, FaArrowLeft } from 'react-icons/fa';
+import { FaCheck, FaExclamationTriangle, FaArrowLeft, FaEnvelope } from 'react-icons/fa';
 
 function TaskAcknowledgement() {
   // Extract taskId and token from URL: /acknowledge/taskId/token
@@ -9,9 +9,11 @@ function TaskAcknowledgement() {
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [completing, setCompleting] = useState(false);
-  const [completed, setCompleted] = useState(false);
   const [message, setMessage] = useState('');
+  const [extensionMessage, setExtensionMessage] = useState('');
+  const [proposedDeadline, setProposedDeadline] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     fetchTaskDetails();
@@ -28,7 +30,7 @@ function TaskAcknowledgement() {
       
       if (!response.ok) {
         if (response.status === 404) {
-          setError('Invalid or expired acknowledgement link. Please ask for a new link from the admin.');
+          setError('Invalid acknowledgement link.');
         } else {
           const errorData = await response.json();
           setError(errorData.message || 'Failed to load task details');
@@ -38,6 +40,10 @@ function TaskAcknowledgement() {
 
       const data = await response.json();
       setTask(data);
+      // Set default proposed deadline to current due date
+      if (data.dueDate) {
+        setProposedDeadline(data.dueDate.split('T')[0]); // Convert to YYYY-MM-DD format
+      }
       setError('');
     } catch (err) {
       console.error('Error fetching task:', err);
@@ -47,37 +53,47 @@ function TaskAcknowledgement() {
     }
   };
 
-  const handleMarkComplete = async () => {
+  const handleSubmitExtensionRequest = async () => {
     try {
-      setCompleting(true);
-      setMessage('');
+      if (!extensionMessage.trim()) {
+        setError('Please enter a message');
+        return;
+      }
+
+      setSubmitting(true);
+      setError('');
+      setSuccessMessage('');
 
       const apiBaseURL = (typeof window !== 'undefined') && (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
         ? 'https://tasktracker-4xm2.onrender.com/api'
         : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
 
-      const response = await fetch(`${apiBaseURL}/tasks/acknowledge/${token}/complete`, {
+      const response = await fetch(`${apiBaseURL}/tasks/${taskId}/extension-request/${token}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          message: extensionMessage,
+          requestedDeadline: proposedDeadline ? new Date(proposedDeadline).toISOString() : null,
+        }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        setError(errorData.message || 'Failed to mark task as complete');
+        setError(errorData.message || 'Failed to submit extension request');
         return;
       }
 
       const data = await response.json();
-      setCompleted(true);
-      setMessage('✅ Task marked as complete! Thank you for confirming.');
-      setTask(data.task);
+      setSuccessMessage('✅ Extension request sent to admin! They will review and respond soon.');
+      setExtensionMessage('');
+      setProposedDeadline(task.dueDate ? task.dueDate.split('T')[0] : '');
     } catch (err) {
-      console.error('Error completing task:', err);
-      setError('Failed to complete task. Please try again.');
+      console.error('Error submitting extension request:', err);
+      setError('Failed to submit request. Please try again.');
     } finally {
-      setCompleting(false);
+      setSubmitting(false);
     }
   };
 
@@ -127,8 +143,8 @@ function TaskAcknowledgement() {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8 pt-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">Task Acknowledgement</h1>
-          <p className="text-gray-600">Confirm task completion with one click</p>
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">Task Request Extension</h1>
+          <p className="text-gray-600">Need more time? Let us know with a message below</p>
         </div>
 
         {/* Task Card */}
@@ -169,7 +185,7 @@ function TaskAcknowledgement() {
                 <p className="text-lg text-gray-800 font-semibold">{task.sector}</p>
               </div>
               <div className="p-4 bg-indigo-50 rounded-lg">
-                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">Due Date</p>
+                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">Current Due Date</p>
                 <p className="text-lg text-gray-800 font-semibold">
                   {new Date(task.dueDate).toLocaleDateString('en-IN', { 
                     weekday: 'short', 
@@ -211,36 +227,70 @@ function TaskAcknowledgement() {
             )}
 
             {/* Success Message */}
-            {message && (
+            {successMessage && (
               <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded">
-                <p className="text-green-700 font-semibold text-lg">{message}</p>
+                <p className="text-green-700 font-semibold text-lg">{successMessage}</p>
               </div>
             )}
 
-            {/* Action Buttons */}
-            <div className="flex gap-4">
-              {task.status === 'Completed' ? (
-                <button
-                  disabled
-                  className="flex-1 px-6 py-4 bg-green-500 text-white font-bold rounded-lg flex items-center justify-center gap-2 cursor-not-allowed opacity-75"
-                >
-                  <FaCheck /> Already Completed
-                </button>
-              ) : (
-                <button
-                  onClick={handleMarkComplete}
-                  disabled={completing}
-                  className="flex-1 px-6 py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-colors disabled:cursor-not-allowed"
-                >
-                  <FaCheck />
-                  {completing ? 'Processing...' : 'Mark Task Complete'}
-                </button>
+            {/* Extension Request Form */}
+            <div className="bg-gradient-to-br from-orange-50 to-yellow-50 p-6 rounded-lg border-2 border-orange-200 mb-6">
+              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <FaEnvelope className="text-orange-500" />
+                Request Deadline Extension
+              </h3>
+
+              {/* Message Input */}
+              <div className="mb-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Your Message *
+                </label>
+                <textarea
+                  value={extensionMessage}
+                  onChange={(e) => setExtensionMessage(e.target.value)}
+                  placeholder="Please explain why you need more time... (e.g., 'Waiting for client approval', 'Need additional resources', etc.)"
+                  className="w-full px-4 py-3 border-2 border-orange-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 resize-none text-gray-700"
+                  rows="4"
+                  disabled={successMessage ? true : false}
+                />
+                <p className="text-xs text-gray-500 mt-1">{extensionMessage.length} characters</p>
+              </div>
+
+              {/* Proposed Deadline */}
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Proposed New Deadline (Optional)
+                </label>
+                <input
+                  type="date"
+                  value={proposedDeadline}
+                  onChange={(e) => setProposedDeadline(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-orange-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 text-gray-700"
+                  disabled={successMessage ? true : false}
+                />
+                <p className="text-xs text-gray-500 mt-1">Leave blank if no specific date in mind</p>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                onClick={handleSubmitExtensionRequest}
+                disabled={submitting || successMessage ? true : false}
+                className="w-full px-6 py-4 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 disabled:from-gray-400 disabled:to-gray-400 text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-all disabled:cursor-not-allowed transform hover:scale-105 disabled:scale-100"
+              >
+                <FaEnvelope />
+                {submitting ? 'Sending...' : 'Send Request to Admin'}
+              </button>
+
+              {successMessage && (
+                <p className="text-xs text-green-700 font-semibold mt-3 text-center">
+                  ✅ Admin will review your request and get back to you soon!
+                </p>
               )}
             </div>
 
             {/* Info */}
-            <p className="text-center text-sm text-gray-500 mt-6">
-              This link will expire in 30 days. After clicking "Mark Task Complete", the task status will be updated in the admin portal.
+            <p className="text-center text-sm text-gray-500">
+              📌 This link never expires. You can use it anytime to request an extension.
             </p>
           </div>
         </div>

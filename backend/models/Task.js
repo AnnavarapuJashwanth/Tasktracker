@@ -85,6 +85,23 @@ const taskSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
+  extensionRequests: [
+    {
+      message: String,
+      requestedBy: String, // assigned person name
+      requestedPhone: String, // assigned person phone
+      requestedAt: {
+        type: Date,
+        default: Date.now,
+      },
+      requestedDeadlineExtension: Date, // proposed new due date (if any)
+      status: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending',
+      },
+    },
+  ],
   createdBy: {
     type: String,
     required: true,
