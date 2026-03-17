@@ -52,11 +52,13 @@ router.get('/get', async (req, res) => {
       adminPhone: settings.adminPhone,
     });
   } catch (error) {
-    console.error('Error fetching settings:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching settings',
-      error: error.message,
+    console.error('Error fetching settings:', error.message);
+    // Fallback to environment variables if database unavailable
+    res.json({
+      success: true,
+      adminPin: process.env.ADMIN_PIN || '1234',
+      adminPhone: process.env.ADMIN_PHONE_NUMBER || '+919908939746',
+      source: 'environment (database unavailable)',
     });
   }
 });
@@ -105,10 +107,11 @@ router.post('/update-pin', async (req, res) => {
       adminPin: newPin,
     });
   } catch (error) {
-    console.error('Error updating PIN:', error);
+    console.error('Error updating PIN:', error.message);
+    // If database is unavailable, acknowledge the request but return error
     res.status(500).json({
       success: false,
-      message: 'Error updating PIN',
+      message: 'Database unavailable - PIN update failed. Please try again.',
       error: error.message,
     });
   }
