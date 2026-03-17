@@ -16,7 +16,7 @@ function TaskHistory() {
     try {
       setLoading(true);
       const adminPin = localStorage.getItem('adminPin') || '1234';
-      const response = await fetch('http://localhost:5000/api/tasks', {
+      const response = await fetch('http://localhost:5000/api/tasks/all', {
         headers: {
           'admin-pin': adminPin,
           'Content-Type': 'application/json',
