@@ -295,6 +295,9 @@ function TaskAcknowledgement() {
 
         {/* QUICK ACTION: Mark as Complete Button - AT THE TOP */}
         <div className="mb-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border-2 border-green-400 shadow-lg">
+          <div style={{background: 'red', color: 'white', padding: '10px', marginBottom: '10px', fontSize: '16px', fontWeight: 'bold'}}>
+            ✅ BUTTONS ARE RENDERING - THIS IS THE MARK COMPLETE SECTION
+          </div>
           <h3 className="text-2xl font-bold text-green-800 mb-3 text-center">✅ Task Completion</h3>
           <p className="text-center text-gray-700 mb-4">Is your task completed? Click below to mark it as done!</p>
           <button
@@ -527,6 +530,9 @@ function TaskAcknowledgement() {
 
             {/* PROMINENT: Mark as Complete Button - Inside Task Card */}
             <div className="mb-8 p-6 bg-gradient-to-r from-green-400 to-emerald-400 rounded-lg border-3 border-green-600 shadow-xl">
+              <div style={{background: 'red', color: 'white', padding: '10px', marginBottom: '10px', fontSize: '16px', fontWeight: 'bold'}}>
+                🎉 SECOND BUTTON SECTION IS RENDERING
+              </div>
               <h3 className="text-center text-green-900 font-bold text-lg mb-4">✅ Task Completed?</h3>
               <button
                 onClick={handleMarkComplete}
