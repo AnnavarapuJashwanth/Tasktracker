@@ -7,6 +7,7 @@ function Dashboard({ adminPin }) {
   const [todayTasks, setTodayTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [mainCard, setMainCard] = useState('total'); // 'total', 'pending', 'inProgress', 'completed'
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -89,67 +90,151 @@ function Dashboard({ adminPin }) {
         </div>
       )}
 
-      {/* Statistics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        {/* Total Tasks Card */}
-        <div className="bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all border-t-4 border-blue-500">
-          <div className="flex justify-between items-start mb-4">
-            <div className="bg-blue-100 p-4 rounded-xl">
-              <FaClipboard className="text-blue-600 text-2xl" />
+      {/* Statistics Grid - 2 Column Layout: Main Card (Left) + 3 Vertical Cards (Right) */}
+      <div className="w-full mb-10 grid grid-cols-4 gap-4 auto-rows-max">
+        
+        {/* Left Column - Main Large Card (spans 2.5 columns) */}
+        <div className="col-span-2 row-span-3">
+          <div className="rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all border-t-4 h-full flex flex-col justify-between"
+            style={{
+              background: mainCard === 'total' ? 'linear-gradient(to right, #dbeafe, #dbeafe)' : 
+                         mainCard === 'pending' ? 'linear-gradient(to right, #fef3c7, #fef3c7)' :
+                         mainCard === 'inProgress' ? 'linear-gradient(to right, #ede9fe, #f3e8ff)' :
+                         'linear-gradient(to right, #dcfce7, #f0fdf4)',
+              borderColor: mainCard === 'total' ? '#3b82f6' : 
+                          mainCard === 'pending' ? '#f59e0b' :
+                          mainCard === 'inProgress' ? '#a855f7' :
+                          '#22c55e'
+            }}>
+            <div className="flex justify-between items-start mb-6">
+              <div className={`p-5 rounded-xl shadow-lg flex items-center justify-center w-20 h-20`}
+                style={{
+                  background: mainCard === 'total' ? '#2563eb' : 
+                             mainCard === 'pending' ? '#d97706' :
+                             mainCard === 'inProgress' ? '#a855f7' :
+                             '#16a34a'
+                }}>
+                {mainCard === 'total' && <FaClipboard className="text-white text-4xl" />}
+                {mainCard === 'pending' && <FaExclamation className="text-white text-4xl" />}
+                {mainCard === 'inProgress' && <FaClock className="text-white text-4xl" />}
+                {mainCard === 'completed' && <FaCheckCircle className="text-white text-4xl" />}
+              </div>
+              <span className="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
+                <FaArrowUp className="text-xs" /> +12%
+              </span>
             </div>
-            <span className="bg-green-100 text-green-800 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
-              <FaArrowUp className="text-xs" /> +12%
-            </span>
+            <div className="flex-1">
+              <h3 className="text-gray-600 text-sm font-semibold uppercase tracking-wide mb-2">
+                {mainCard === 'total' && 'Total Tasks'}
+                {mainCard === 'pending' && 'Pending Tasks'}
+                {mainCard === 'inProgress' && 'In Progress'}
+                {mainCard === 'completed' && 'Completed'}
+              </h3>
+              <p className="text-6xl font-bold text-gray-900 mb-3">
+                {mainCard === 'total' && stats.total}
+                {mainCard === 'pending' && stats.pending}
+                {mainCard === 'inProgress' && stats.inProgress}
+                {mainCard === 'completed' && stats.completed}
+              </p>
+              <p className="text-gray-600 text-sm">
+                {mainCard === 'total' && "This month's tasks"}
+                {mainCard === 'pending' && 'Awaiting action'}
+                {mainCard === 'inProgress' && 'Currently active'}
+                {mainCard === 'completed' && 'Successfully finished'}
+              </p>
+            </div>
+            <div className="mt-4 p-3 bg-white bg-opacity-50 rounded-lg border-l-4"
+              style={{
+                borderColor: mainCard === 'total' ? '#3b82f6' : 
+                            mainCard === 'pending' ? '#f59e0b' :
+                            mainCard === 'inProgress' ? '#a855f7' :
+                            '#22c55e'
+              }}>
+              <p className="text-xs font-semibold text-gray-800">
+                📊 Click a card on the right to view
+              </p>
+            </div>
           </div>
-          <h3 className="text-gray-600 text-sm font-semibold uppercase tracking-wide mb-1">Total Tasks</h3>
-          <p className="text-4xl font-bold text-gray-900">{stats.total}</p>
-          <p className="text-gray-500 text-xs mt-3">This month's tasks</p>
         </div>
 
+        {/* Right Column - 3 Vertical Cards */}
+        
         {/* Pending Card */}
-        <div className="bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all border-t-4 border-amber-500">
-          <div className="flex justify-between items-start mb-4">
-            <div className="bg-amber-100 p-4 rounded-xl">
-              <FaExclamation className="text-amber-600 text-2xl" />
+        {mainCard !== 'pending' && (
+          <div 
+            onClick={() => setMainCard('pending')}
+            className="col-span-2 rounded-2xl p-5 shadow-md hover:shadow-lg transition-all border-l-4 border-amber-500 cursor-pointer transform hover:scale-105 active:scale-95"
+            style={{
+              background: 'linear-gradient(to right, #fef3c7, #fef3c7)'
+            }}>
+            <div className="flex justify-between items-start mb-3">
+              <div className="bg-amber-600 p-3 rounded-lg shadow-lg">
+                <FaExclamation className="text-white text-xl" />
+              </div>
+              <span className="bg-red-100 text-red-800 text-xs font-bold px-2 py-0.5 rounded-full">+5%</span>
             </div>
-            <span className="bg-red-100 text-red-800 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
-              <FaArrowUp className="text-xs" /> +5%
-            </span>
+            <h3 className="text-gray-600 text-xs font-semibold uppercase tracking-wide mb-1">Pending</h3>
+            <p className="text-3xl font-bold text-gray-900">{stats.pending}</p>
           </div>
-          <h3 className="text-gray-600 text-sm font-semibold uppercase tracking-wide mb-1">Pending</h3>
-          <p className="text-4xl font-bold text-gray-900">{stats.pending}</p>
-          <p className="text-gray-500 text-xs mt-3">Awaiting action</p>
-        </div>
+        )}
 
         {/* In Progress Card */}
-        <div className="bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all border-t-4 border-purple-500">
-          <div className="flex justify-between items-start mb-4">
-            <div className="bg-purple-100 p-4 rounded-xl">
-              <FaClock className="text-purple-600 text-2xl" />
+        {mainCard !== 'inProgress' && (
+          <div 
+            onClick={() => setMainCard('inProgress')}
+            className="col-span-2 rounded-2xl p-5 shadow-md hover:shadow-lg transition-all border-l-4 border-purple-500 cursor-pointer transform hover:scale-105 active:scale-95"
+            style={{
+              background: 'linear-gradient(to right, #ede9fe, #f3e8ff)'
+            }}>
+            <div className="flex justify-between items-start mb-3">
+              <div className="bg-purple-600 p-3 rounded-lg shadow-lg">
+                <FaClock className="text-white text-xl" />
+              </div>
+              <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded-full">-2%</span>
             </div>
-            <span className="bg-blue-100 text-blue-800 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
-              <FaArrowUp className="text-xs" /> -2%
-            </span>
+            <h3 className="text-gray-600 text-xs font-semibold uppercase tracking-wide mb-1">In Progress</h3>
+            <p className="text-3xl font-bold text-gray-900">{stats.inProgress}</p>
           </div>
-          <h3 className="text-gray-600 text-sm font-semibold uppercase tracking-wide mb-1">In Progress</h3>
-          <p className="text-4xl font-bold text-gray-900">{stats.inProgress}</p>
-          <p className="text-gray-500 text-xs mt-3">Currently active</p>
-        </div>
+        )}
 
         {/* Completed Card */}
-        <div className="bg-white rounded-2xl p-6 shadow-md hover:shadow-lg transition-all border-t-4 border-green-500">
-          <div className="flex justify-between items-start mb-4">
-            <div className="bg-green-100 p-4 rounded-xl">
-              <FaCheckCircle className="text-green-600 text-2xl" />
+        {mainCard !== 'completed' && (
+          <div 
+            onClick={() => setMainCard('completed')}
+            className="col-span-2 rounded-2xl p-5 shadow-md hover:shadow-lg transition-all border-l-4 border-green-500 cursor-pointer transform hover:scale-105 active:scale-95"
+            style={{
+              background: 'linear-gradient(to right, #dcfce7, #f0fdf4)'
+            }}>
+            <div className="flex justify-between items-start mb-3">
+              <div className="bg-green-600 p-3 rounded-lg shadow-lg">
+                <FaCheckCircle className="text-white text-xl" />
+              </div>
+              <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded-full">+18%</span>
             </div>
-            <span className="bg-green-100 text-green-800 text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
-              <FaArrowUp className="text-xs" /> +18%
-            </span>
+            <h3 className="text-gray-600 text-xs font-semibold uppercase tracking-wide mb-1">Completed</h3>
+            <p className="text-3xl font-bold text-gray-900">{stats.completed}</p>
           </div>
-          <h3 className="text-gray-600 text-sm font-semibold uppercase tracking-wide mb-1">Completed</h3>
-          <p className="text-4xl font-bold text-gray-900">{stats.completed}</p>
-          <p className="text-gray-500 text-xs mt-3">Successfully finished</p>
-        </div>
+        )}
+
+        {/* Total Card */}
+        {mainCard !== 'total' && (
+          <div 
+            onClick={() => setMainCard('total')}
+            className="col-span-2 rounded-2xl p-5 shadow-md hover:shadow-lg transition-all border-l-4 border-blue-500 cursor-pointer transform hover:scale-105 active:scale-95"
+            style={{
+              background: 'linear-gradient(to right, #dbeafe, #dbeafe)'
+            }}>
+            <div className="flex justify-between items-start mb-3">
+              <div className="bg-blue-600 p-3 rounded-lg shadow-lg">
+                <FaClipboard className="text-white text-xl" />
+              </div>
+              <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded-full">+12%</span>
+            </div>
+            <h3 className="text-gray-600 text-xs font-semibold uppercase tracking-wide mb-1">Total</h3>
+            <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+          </div>
+        )}
+
       </div>
 
       {/* Main Content Grid */}

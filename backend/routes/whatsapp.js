@@ -1,6 +1,7 @@
 import express from 'express';
 // import twilio from 'twilio';  // Uncomment when Twilio credentials are available
 import Task from '../models/Task.js';
+import adminAuth from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -11,18 +12,6 @@ if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN) {
   // const twilio = await import('twilio');
   // client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 }
-
-// Middleware to check admin authentication
-const adminAuth = (req, res, next) => {
-  // Headers are typically lowercase in Express
-  const adminPin = req.headers.adminpin || req.headers['admin-pin'] || req.headers.adminPin;
-  
-  if (adminPin !== process.env.ADMIN_PIN) {
-    console.log('Auth failed. Expected:', process.env.ADMIN_PIN, 'Got:', adminPin);
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
-  next();
-};
 
 // Send WhatsApp message with task assignment
 router.post('/send-assignment', adminAuth, async (req, res) => {

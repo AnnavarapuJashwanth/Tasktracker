@@ -36,6 +36,10 @@ const taskSchema = new mongoose.Schema({
     type: Date,
     required: true,
   },
+  originalDueDate: {
+    type: Date,
+    default: null, // stores the very first deadline - never changes after first approval
+  },
   referencePhone: {
     type: String,
     default: null,
@@ -95,6 +99,10 @@ const taskSchema = new mongoose.Schema({
         default: Date.now,
       },
       requestedDeadlineExtension: Date, // proposed new due date (if any)
+      previousDeadline: {
+        type: Date,
+        default: null, // the deadline before this extension request was made
+      },
       status: {
         type: String,
         enum: ['pending', 'approved', 'rejected'],

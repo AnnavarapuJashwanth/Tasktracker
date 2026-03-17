@@ -94,10 +94,8 @@ function TaskAcknowledgement() {
       console.log('✅ Task data received:', data);
       
       setTask(data);
-      // Set default proposed deadline to current due date
-      if (data.dueDate) {
-        setProposedDeadline(data.dueDate.split('T')[0]); // Convert to YYYY-MM-DD format
-      }
+      // Do NOT pre-fill proposed deadline - user should choose a DIFFERENT date
+      setProposedDeadline(''); // Empty, force user to select a new date
       setError('');
       
       // Fetch extension status for this task
@@ -114,6 +112,19 @@ function TaskAcknowledgement() {
     try {
       if (!extensionMessage.trim()) {
         setError('Please enter a message');
+        return;
+      }
+
+      if (!proposedDeadline) {
+        setError('Please enter a new proposed deadline');
+        return;
+      }
+
+      const currentDeadlineDate = new Date(task.dueDate).toISOString().split('T')[0];
+      const proposedDate = proposedDeadline;
+      
+      if (proposedDate <= currentDeadlineDate) {
+        setError('⚠️ Proposed deadline must be AFTER the current deadline. Please select a later date.');
         return;
       }
 
@@ -145,7 +156,7 @@ function TaskAcknowledgement() {
       const data = await response.json();
       setSuccessMessage('✅ Extension request sent to admin! They will review and respond soon.');
       setExtensionMessage('');
-      setProposedDeadline(task.dueDate ? task.dueDate.split('T')[0] : '');
+      setProposedDeadline(''); // Clear field for next use
     } catch (err) {
       console.error('Error submitting extension request:', err);
       setError('Failed to submit request. Please try again.');
@@ -370,9 +381,9 @@ function TaskAcknowledgement() {
                 <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">Sector</p>
                 <p className="text-lg text-gray-800 font-semibold">{task.sector}</p>
               </div>
-              <div className="p-4 bg-indigo-50 rounded-lg">
-                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">Current Due Date</p>
-                <p className="text-lg text-gray-800 font-semibold">
+              <div className="p-4 bg-indigo-50 rounded-lg border-2 border-indigo-300">
+                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1">📅 Original Deadline</p>
+                <p className="text-lg text-gray-800 font-bold text-indigo-700">
                   {new Date(task.dueDate).toLocaleDateString('en-IN', { 
                     weekday: 'short', 
                     year: 'numeric', 
@@ -468,9 +479,11 @@ function TaskAcknowledgement() {
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                           <div className="bg-white p-4 rounded border-l-4 border-green-500">
-                            <p className="text-xs text-gray-600 uppercase tracking-wide font-semibold mb-1">Original Deadline</p>
+                            <p className="text-xs text-gray-600 uppercase tracking-wide font-semibold mb-1">Original Deadline (from start)</p>
                             <p className="text-lg font-bold text-gray-800">
-                              {new Date(task.dueDate).toLocaleDateString('en-IN', { 
+                              {new Date(
+                                task.originalDueDate || task.dueDate
+                              ).toLocaleDateString('en-IN', { 
                                 weekday: 'short', 
                                 year: 'numeric', 
                                 month: 'short', 
@@ -656,16 +669,17 @@ function TaskAcknowledgement() {
                 {/* Proposed Deadline */}
                 <div className="mb-6">
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Proposed New Deadline (Optional)
+                    ⏳ Proposed New Deadline *
                   </label>
                   <input
                     type="date"
                     value={proposedDeadline}
                     onChange={(e) => setProposedDeadline(e.target.value)}
+                    min={new Date(new Date(task.dueDate).getTime() + 86400000).toISOString().split('T')[0]} // Minimum: tomorrow after current deadline
                     className="w-full px-4 py-3 border-2 border-orange-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 text-gray-700"
                     disabled={successMessage ? true : false}
                   />
-                  <p className="text-xs text-gray-500 mt-1">Leave blank if no specific date in mind</p>
+                  <p className="text-xs text-gray-500 mt-1">Current deadline: {new Date(task.dueDate).toLocaleDateString('en-IN', { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })} - Select a date AFTER this</p>
                 </div>
 
                 {/* Submit Button */}
@@ -681,46 +695,6 @@ function TaskAcknowledgement() {
                 {successMessage && (
                   <p className="text-xs text-green-700 font-semibold mt-3 text-center">
                     ✅ Admin will review your request and get back to you soon!
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Mark Complete Form */}
-            {selectedAction === 'complete' && (
-              <div className="bg-gradient-to-br from-green-50 to-teal-50 p-6 rounded-lg border-2 border-green-200 mb-6">
-                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <FaCheckCircle className="text-green-500" />
-                  Confirm Task Completion
-                </h3>
-
-                <div className="mb-6 p-4 bg-white rounded border border-green-300">
-                  <p className="text-gray-700 text-center mb-4">
-                    By clicking the button below, you confirm that this task has been completed successfully.
-                  </p>
-                  <div className="bg-green-100 p-4 rounded mb-4">
-                    <p className="text-green-800 font-semibold text-center">
-                      📋 {task.title}
-                    </p>
-                  </div>
-                  <p className="text-gray-600 text-sm text-center">
-                    This action cannot be undone. The task status will be updated to "Completed".
-                  </p>
-                </div>
-
-                {/* Confirm Button */}
-                <button
-                  onClick={handleMarkComplete}
-                  disabled={submitting || successMessage ? true : false}
-                  className="w-full px-6 py-4 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 disabled:from-gray-400 disabled:to-gray-400 text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-all disabled:cursor-not-allowed transform hover:scale-105 disabled:scale-100"
-                >
-                  <FaCheckCircle />
-                  {submitting ? 'Marking Complete...' : 'Confirm Task Completion'}
-                </button>
-
-                {successMessage && (
-                  <p className="text-xs text-green-700 font-semibold mt-3 text-center">
-                    ✅ Thank you! Your task has been marked as complete!
                   </p>
                 )}
               </div>

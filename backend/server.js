@@ -9,6 +9,7 @@ import authRoutes from './routes/auth.js';
 import tasksRoutes from './routes/tasks.js';
 import contactsRoutes from './routes/contacts.js';
 import whatsappRoutes from './routes/whatsapp.js';
+import settingsRoutes from './routes/settings.js';
 
 // Get the directory path for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -74,6 +75,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/tasks', tasksRoutes);
 app.use('/api/contacts', contactsRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Serve the frontend build in production
 // Check if frontend dist folder exists

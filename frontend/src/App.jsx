@@ -24,6 +24,37 @@ function App() {
       setIsLoggedIn(true);
       setAdminPin(savedPin);
     }
+
+    // Listen for storage changes (PIN updates from Settings)
+    const handleStorageChange = (e) => {
+      if (e.key === 'adminPin' && e.newValue) {
+        setAdminPin(e.newValue);
+        console.log('✅ PIN updated from Settings:', e.newValue);
+      }
+      if (e.key === 'adminPhone') {
+        console.log('✅ Admin WhatsApp number updated:', e.newValue);
+      }
+    };
+
+    // Listen for custom events from Settings component
+    const handlePinUpdated = (e) => {
+      setAdminPin(e.detail.pin);
+      console.log('✅ PIN updated (real-time):', e.detail.pin);
+    };
+
+    const handlePhoneUpdated = (e) => {
+      console.log('✅ Admin WhatsApp updated (real-time):', e.detail.phone);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('pinUpdated', handlePinUpdated);
+    window.addEventListener('adminPhoneUpdated', handlePhoneUpdated);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('pinUpdated', handlePinUpdated);
+      window.removeEventListener('adminPhoneUpdated', handlePhoneUpdated);
+    };
   }, []);
 
   const handleLogin = useCallback((pin) => {

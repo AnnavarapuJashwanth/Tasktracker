@@ -2,24 +2,9 @@ import express from 'express';
 import mongoose from 'mongoose';
 import Task from '../models/Task.js';
 import upload, { uploadToCloudinary } from '../middleware/upload.js';
+import adminAuth from '../middleware/auth.js';
 
 const router = express.Router();
-
-// Middleware to check admin authentication
-const adminAuth = (req, res, next) => {
-  // Headers are typically lowercase in Express
-  const adminPin = req.headers.adminpin || req.headers['admin-pin'] || req.headers.adminPin;
-  const expectedPin = process.env.ADMIN_PIN;
-  
-  console.log('Auth Check - Headers:', req.headers);
-  console.log('Auth Check - Received PIN:', adminPin, 'Expected PIN:', expectedPin);
-  
-  if (!adminPin || adminPin !== expectedPin) {
-    console.log('Auth failed. Expected:', expectedPin, 'Got:', adminPin);
-    return res.status(401).json({ message: 'Unauthorized - Invalid PIN' });
-  }
-  next();
-};
 
 // Create task
 router.post('/create', adminAuth, upload.single('photo'), uploadToCloudinary, async (req, res, next) => {
@@ -52,6 +37,7 @@ router.post('/create', adminAuth, upload.single('photo'), uploadToCloudinary, as
       category,
       sector,
       dueDate,
+      originalDueDate: dueDate, // Set original deadline when creating task
       referencePhone,
       referenceNumber,
       assignedToContactId,
@@ -498,8 +484,14 @@ router.post('/extension-requests/:taskId/approve', adminAuth, async (req, res) =
     task.extensionRequests[requestIndex].status = 'approved';
     task.extensionRequests[requestIndex].approvedAt = new Date();
     task.extensionRequests[requestIndex].approvalNote = approvalNote || null;
+    task.extensionRequests[requestIndex].previousDeadline = task.dueDate; // store what deadline was before this approval
     
-    // Update task deadline to the new deadline if provided
+    // Initialize originalDueDate if it doesn't exist (first extension for old tasks)
+    if (!task.originalDueDate) {
+      task.originalDueDate = task.dueDate;
+    }
+    
+    // Update current deadline - don't touch originalDueDate!
     if (newDeadline) {
       task.dueDate = new Date(newDeadline);
       task.extensionRequests[requestIndex].approvedDeadline = new Date(newDeadline);

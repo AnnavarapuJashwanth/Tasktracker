@@ -13,7 +13,7 @@ function Settings() {
     if (saved) setAdminPin(saved);
   }, []);
 
-  const handleChangePIN = () => {
+  const handleChangePIN = async () => {
     if (!newPin || !confirmPin) {
       setMessage('Please fill in all PIN fields');
       return;
@@ -26,15 +26,46 @@ function Settings() {
       setMessage('PIN must be exactly 4 digits');
       return;
     }
-    localStorage.setItem('adminPin', newPin);
-    setMessage('✓ PIN updated successfully!');
-    setNewPin('');
-    setConfirmPin('');
-    setTimeout(() => setMessage(''), 3000);
+
+    try {
+      setMessage('Updating PIN...');
+      const response = await fetch('/api/settings/update-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          currentPin: adminPin, 
+          newPin: newPin 
+        })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        // Update localStorage
+        localStorage.setItem('adminPin', newPin);
+        setAdminPin(newPin);
+        
+        // Dispatch custom event to update other components
+        window.dispatchEvent(new CustomEvent('pinUpdated', { detail: { pin: newPin } }));
+        
+        setMessage('✓ PIN updated successfully! New PIN will work after next login.');
+        setNewPin('');
+        setConfirmPin('');
+        setTimeout(() => setMessage(''), 3000);
+      } else {
+        setMessage(`❌ ${data.message || 'Failed to update PIN'}`);
+        setTimeout(() => setMessage(''), 3000);
+      }
+    } catch (error) {
+      setMessage(`❌ Error updating PIN: ${error.message}`);
+      setTimeout(() => setMessage(''), 3000);
+    }
   };
 
   const handleChangeAdminPhone = () => {
     localStorage.setItem('adminPhone', adminPhone);
+    // Dispatch custom event to update other components
+    window.dispatchEvent(new CustomEvent('adminPhoneUpdated', { detail: { phone: adminPhone } }));
     setMessage('✓ Admin phone updated successfully!');
     setTimeout(() => setMessage(''), 3000);
   };

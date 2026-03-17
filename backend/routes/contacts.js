@@ -1,17 +1,8 @@
 import express from 'express';
 import Contact from '../models/Contact.js';
+import adminAuth from '../middleware/auth.js';
 
 const router = express.Router();
-
-// Middleware to check admin authentication
-const adminAuth = (req, res, next) => {
-  const adminPin = req.headers.adminpin || req.headers['admin-pin'] || req.headers.adminPin;
-
-  if (adminPin !== process.env.ADMIN_PIN) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
-  next();
-};
 
 // Get all contacts
 router.get('/all', adminAuth, async (req, res) => {
