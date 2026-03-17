@@ -251,16 +251,12 @@ router.post('/:taskId/acknowledge-link', adminAuth, async (req, res) => {
       return res.status(404).json({ message: 'Task not found' });
     }
 
-    // Generate unique token
+    // Generate unique token - NO EXPIRY (links never expire)
     const crypto = await import('crypto');
     const token = crypto.randomBytes(32).toString('hex');
-    
-    // Set token expiry to 30 days from now
-    const expiryDate = new Date();
-    expiryDate.setDate(expiryDate.getDate() + 30);
 
     task.acknowledgementToken = token;
-    task.acknowledgementTokenExpiry = expiryDate;
+    task.acknowledgementTokenExpiry = null; // No expiry - links valid forever
     await task.save();
 
     // Generate full URL (prefer env variable, fallback to request origin)
@@ -301,20 +297,20 @@ router.post('/:taskId/acknowledge-link', adminAuth, async (req, res) => {
 router.get('/acknowledge/:token', async (req, res) => {
   try {
     const task = await Task.findOne({ 
-      acknowledgementToken: req.params.token,
-      acknowledgementTokenExpiry: { $gt: new Date() }
+      acknowledgementToken: req.params.token
     });
 
     if (!task) {
-      return res.status(404).json({ message: 'Invalid or expired acknowledgement link' });
+      return res.status(404).json({ message: 'Invalid acknowledgement link' });
     }
 
-    // Return task details (minimal info for public view)
+    // Return task details (minimal info for public view) - INCLUDING CATEGORY
     res.json({
       _id: task._id,
       title: task.title,
       description: task.description,
       priority: task.priority,
+      category: task.category,
       sector: task.sector,
       dueDate: task.dueDate,
       assignedToContact: task.assignedToContact,
