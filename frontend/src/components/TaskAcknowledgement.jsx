@@ -294,25 +294,58 @@ function TaskAcknowledgement() {
         </div>
 
         {/* QUICK ACTION: Mark as Complete Button - AT THE TOP */}
-        <div className="mb-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border-2 border-green-400 shadow-lg">
-          <div style={{background: 'red', color: 'white', padding: '10px', marginBottom: '10px', fontSize: '16px', fontWeight: 'bold'}}>
-            ✅ BUTTONS ARE RENDERING - THIS IS THE MARK COMPLETE SECTION
-          </div>
-          <h3 className="text-2xl font-bold text-green-800 mb-3 text-center">✅ Task Completion</h3>
-          <p className="text-center text-gray-700 mb-4">Is your task completed? Click below to mark it as done!</p>
+        <div style={{
+          marginBottom: '30px',
+          padding: '20px',
+          backgroundColor: '#10b981',
+          borderRadius: '10px',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+          display: 'block',
+          width: '100%'
+        }}>
+          <h3 style={{
+            fontSize: '24px',
+            fontWeight: 'bold',
+            color: 'white',
+            marginBottom: '15px',
+            textAlign: 'center'
+          }}>✅ Task Completion</h3>
+          <p style={{
+            textAlign: 'center',
+            color: 'white',
+            marginBottom: '15px',
+            fontSize: '16px'
+          }}>Is your task completed? Click below to mark it as done!</p>
           <button
             onClick={handleMarkComplete}
             disabled={submitting || task.status === 'Completed'}
-            className={`w-full px-6 py-4 rounded-lg font-bold text-lg transition-all flex items-center justify-center gap-2 ${
-              task.status === 'Completed'
-                ? 'bg-gray-400 text-white cursor-not-allowed'
-                : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 shadow-lg hover:shadow-xl'
-            } disabled:opacity-50 disabled:cursor-not-allowed`}
+            style={{
+              width: '100%',
+              padding: '15px 20px',
+              borderRadius: '8px',
+              fontSize: '18px',
+              fontWeight: 'bold',
+              border: 'none',
+              cursor: submitting || task.status === 'Completed' ? 'not-allowed' : 'pointer',
+              backgroundColor: task.status === 'Completed' ? '#999' : '#ffffff',
+              color: task.status === 'Completed' ? '#ffffff' : '#10b981',
+              opacity: submitting || task.status === 'Completed' ? '0.6' : '1',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px'
+            }}
           >
             {submitting ? '⏳ Marking...' : '✅ Mark Task as Complete'}
           </button>
           {task.status === 'Completed' && (
-            <p className="text-center text-green-600 font-semibold mt-3">✓ This task is already marked as completed!</p>
+            <p style={{
+              textAlign: 'center',
+              color: 'white',
+              fontWeight: 'bold',
+              marginTop: '15px'
+            }}>✓ This task is already marked as completed!</p>
           )}
         </div>
 
@@ -529,19 +562,43 @@ function TaskAcknowledgement() {
             )}
 
             {/* PROMINENT: Mark as Complete Button - Inside Task Card */}
-            <div className="mb-8 p-6 bg-gradient-to-r from-green-400 to-emerald-400 rounded-lg border-3 border-green-600 shadow-xl">
-              <div style={{background: 'red', color: 'white', padding: '10px', marginBottom: '10px', fontSize: '16px', fontWeight: 'bold'}}>
-                🎉 SECOND BUTTON SECTION IS RENDERING
-              </div>
-              <h3 className="text-center text-green-900 font-bold text-lg mb-4">✅ Task Completed?</h3>
+            <div style={{
+              marginBottom: '30px',
+              padding: '20px',
+              backgroundColor: '#d1fae5',
+              borderRadius: '10px',
+              border: '3px solid #10b981',
+              boxShadow: '0 10px 15px rgba(0,0,0,0.1)',
+              display: 'block'
+            }}>
+              <h3 style={{
+                textAlign: 'center',
+                color: '#065f46',
+                fontWeight: 'bold',
+                fontSize: '20px',
+                marginBottom: '15px'
+              }}>✅ Task Completed?</h3>
               <button
                 onClick={handleMarkComplete}
                 disabled={submitting || task.status === 'Completed'}
-                className={`w-full px-6 py-4 rounded-lg font-bold text-xl transition-all flex items-center justify-center gap-3 ${
-                  task.status === 'Completed'
-                    ? 'bg-gray-500 text-white cursor-not-allowed'
-                    : 'bg-white text-green-700 hover:bg-green-50 shadow-lg hover:shadow-xl'
-                } disabled:opacity-50 disabled:cursor-not-allowed`}
+                style={{
+                  width: '100%',
+                  padding: '18px 20px',
+                  borderRadius: '8px',
+                  fontSize: '20px',
+                  fontWeight: 'bold',
+                  border: 'none',
+                  cursor: submitting || task.status === 'Completed' ? 'not-allowed' : 'pointer',
+                  backgroundColor: task.status === 'Completed' ? '#999' : '#ffffff',
+                  color: task.status === 'Completed' ? '#fff' : '#10b981',
+                  opacity: submitting || task.status === 'Completed' ? '0.6' : '1',
+                  transition: 'all 0.3s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                }}
               >
                 {submitting ? (
                   <>⏳ Marking as Complete...</>
@@ -552,7 +609,12 @@ function TaskAcknowledgement() {
                 )}
               </button>
               {task.status === 'Completed' && (
-                <p className="text-center text-green-900 font-bold mt-3">✓ Task already completed!</p>
+                <p style={{
+                  textAlign: 'center',
+                  color: '#065f46',
+                  fontWeight: 'bold',
+                  marginTop: '15px'
+                }}>✓ Task already completed!</p>
               )}
             </div>
 
