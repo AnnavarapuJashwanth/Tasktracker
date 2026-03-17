@@ -1,24 +1,31 @@
 import Settings from '../models/Settings.js';
 
-// Centralized authentication middleware
+// Centralized authentication middleware with fallback
 export const adminAuth = async (req, res, next) => {
   try {
     // Get PIN from headers (Express converts headers to lowercase)
     const adminPin = req.headers.adminpin || req.headers['admin-pin'] || req.headers.adminpin;
     
-    // Fetch PIN from database
-    let settings = await Settings.findOne();
+    let expectedPin = process.env.ADMIN_PIN || '1234';
     
-    // If no settings exist, create default with env var
-    if (!settings) {
-      settings = new Settings({
-        adminPin: process.env.ADMIN_PIN || '1234',
-        adminPhone: '+919908939746',
-      });
-      await settings.save();
+    try {
+      // Try to fetch PIN from database with a short timeout
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('DB timeout')), 2000)
+      );
+      
+      const dbFetch = Settings.findOne();
+      const settings = await Promise.race([dbFetch, timeoutPromise]);
+      
+      if (settings && settings.adminPin) {
+        expectedPin = settings.adminPin;
+        console.log('🔐 Auth Check - Using PIN from database');
+      }
+    } catch (dbError) {
+      // Database unavailable, use env PIN
+      console.warn('⚠️  Database unavailable, using environment PIN:', dbError.message);
+      expectedPin = process.env.ADMIN_PIN || '1234';
     }
-    
-    const expectedPin = settings.adminPin;
     
     console.log('🔐 Auth Check - Received PIN:', adminPin, 'Expected PIN:', expectedPin);
     
@@ -29,7 +36,7 @@ export const adminAuth = async (req, res, next) => {
     
     next();
   } catch (error) {
-    console.error('❌ Auth middleware error:', error.message);
+    console.error('❌ Auth error:', error.message);
     return res.status(500).json({ message: 'Authentication error', error: error.message });
   }
 };
