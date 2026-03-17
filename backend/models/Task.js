@@ -100,6 +100,22 @@ const taskSchema = new mongoose.Schema({
         enum: ['pending', 'approved', 'rejected'],
         default: 'pending',
       },
+      rejectionReason: {
+        type: String,
+        default: null, // reason why extension was rejected
+      },
+      rejectedAt: {
+        type: Date,
+        default: null,
+      },
+      approvedAt: {
+        type: Date,
+        default: null,
+      },
+      approvalNote: {
+        type: String,
+        default: null, // admin notes when approving
+      },
     },
   ],
   createdBy: {

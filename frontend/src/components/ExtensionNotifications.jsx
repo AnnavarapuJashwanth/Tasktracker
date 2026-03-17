@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
-import { FaBell, FaCheck, FaTimes, FaEdit, FaPhone } from 'react-icons/fa';
+import { FaBell, FaCheck, FaTimes, FaEdit, FaPhone, FaCalendar } from 'react-icons/fa';
 
 function ExtensionNotifications() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedTask, setSelectedTask] = useState(null);
+  const [editMode, setEditMode] = useState(false); // For edit modal
+  const [newDeadline, setNewDeadline] = useState('');
+  const [approvalNote, setApprovalNote] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
 
   useEffect(() => {
     fetchExtensionRequests();
@@ -36,42 +40,59 @@ function ExtensionNotifications() {
     }
   };
 
-  const handleApprove = async (taskId, requestIndex) => {
+  const handleApprove = async () => {
     try {
       const adminPin = localStorage.getItem('adminPin') || '1234';
-      const response = await fetch(`http://localhost:5000/api/tasks/extension-requests/${taskId}/approve`, {
+      const finalDeadline = newDeadline || selectedTask.requestedDeadlineExtension;
+      
+      const response = await fetch(`http://localhost:5000/api/tasks/extension-requests/${selectedTask.taskId || selectedTask._id}/approve`, {
         method: 'POST',
         headers: {
           'admin-pin': adminPin,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ requestIndex }),
+        body: JSON.stringify({ 
+          requestIndex: selectedTask.requestIndex,
+          newDeadline: finalDeadline,
+          approvalNote
+        }),
       });
 
       if (response.ok) {
         fetchExtensionRequests();
         setSelectedTask(null);
+        setEditMode(false);
+        setNewDeadline('');
+        setApprovalNote('');
+      } else {
+        console.error('Error approving:', response.status);
       }
     } catch (err) {
       console.error('Error approving extension:', err);
     }
   };
 
-  const handleReject = async (taskId, requestIndex) => {
+  const handleReject = async () => {
     try {
       const adminPin = localStorage.getItem('adminPin') || '1234';
-      const response = await fetch(`http://localhost:5000/api/tasks/extension-requests/${taskId}/reject`, {
+      const response = await fetch(`http://localhost:5000/api/tasks/extension-requests/${selectedTask.taskId || selectedTask._id}/reject`, {
         method: 'POST',
         headers: {
           'admin-pin': adminPin,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ requestIndex }),
+        body: JSON.stringify({ 
+          requestIndex: selectedTask.requestIndex,
+          rejectionReason 
+        }),
       });
 
       if (response.ok) {
         fetchExtensionRequests();
         setSelectedTask(null);
+        setRejectionReason('');
+      } else {
+        console.error('Error rejecting:', response.status);
       }
     } catch (err) {
       console.error('Error rejecting extension:', err);
@@ -212,26 +233,118 @@ function ExtensionNotifications() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-3 pt-4">
-                <button
-                  onClick={() => handleApprove(selectedTask.taskId || selectedTask._id, selectedTask.requestIndex)}
-                  className="flex-1 px-4 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
-                >
-                  <FaCheck /> Approve Extension
-                </button>
-                <button
-                  onClick={() => handleReject(selectedTask.taskId || selectedTask._id, selectedTask.requestIndex)}
-                  className="flex-1 px-4 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
-                >
-                  <FaTimes /> Reject Request
-                </button>
-                <button
-                  onClick={() => setSelectedTask(null)}
-                  className="flex-1 px-4 py-3 bg-gray-400 hover:bg-gray-500 text-white font-bold rounded-lg transition-colors"
-                >
-                  Close
-                </button>
-              </div>
+              {!editMode ? (
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={() => {
+                      setEditMode(true);
+                      setNewDeadline(selectedTask.requestedDeadlineExtension ? new Date(selectedTask.requestedDeadlineExtension).toISOString().split('T')[0] : '');
+                    }}
+                    className="flex-1 px-4 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <FaCheck /> Approve Extension
+                  </button>
+                  <button
+                    onClick={() => setEditMode('reject')}
+                    className="flex-1 px-4 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <FaTimes /> Reject Request
+                  </button>
+                  <button
+                    onClick={() => setSelectedTask(null)}
+                    className="flex-1 px-4 py-3 bg-gray-400 hover:bg-gray-500 text-white font-bold rounded-lg transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              ) : editMode === 'reject' ? (
+                // Rejection form
+                <div className="pt-4 space-y-4">
+                  <div className="p-4 bg-red-50 rounded-lg border-2 border-red-300">
+                    <h3 className="font-bold text-red-800 mb-3">Rejection Reason</h3>
+                    <textarea
+                      value={rejectionReason}
+                      onChange={(e) => setRejectionReason(e.target.value)}
+                      placeholder="Enter reason for rejecting this extension request..."
+                      className="w-full px-3 py-2 border-2 border-red-300 rounded-lg focus:outline-none focus:border-red-500 resize-none"
+                      rows="3"
+                    />
+                    <p className="text-xs text-gray-600 mt-2">{rejectionReason.length} characters</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleReject}
+                      className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <FaTimes /> Confirm Rejection
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditMode(false);
+                        setRejectionReason('');
+                      }}
+                      className="flex-1 px-4 py-3 bg-gray-400 hover:bg-gray-500 text-white font-bold rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                // Approval edit form
+                <div className="pt-4 space-y-4">
+                  <div className="p-4 bg-green-50 rounded-lg border-2 border-green-300">
+                    <h3 className="font-bold text-green-800 mb-3">Edit Deadline & Add Notes</h3>
+                    
+                    <div className="mb-4">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <FaCalendar className="inline mr-2" /> New Deadline
+                      </label>
+                      <input
+                        type="date"
+                        value={newDeadline}
+                        onChange={(e) => setNewDeadline(e.target.value)}
+                        className="w-full px-3 py-2 border-2 border-green-300 rounded-lg focus:outline-none focus:border-green-500"
+                      />
+                      <p className="text-xs text-gray-600 mt-1">
+                        Proposed: {new Date(selectedTask.requestedDeadlineExtension).toLocaleDateString('en-IN')}
+                      </p>
+                    </div>
+
+                    <div className="mb-4">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Approval Notes (Optional)
+                      </label>
+                      <textarea
+                        value={approvalNote}
+                        onChange={(e) => setApprovalNote(e.target.value)}
+                        placeholder="Add any notes for the requester..."
+                        className="w-full px-3 py-2 border-2 border-green-300 rounded-lg focus:outline-none focus:border-green-500 resize-none"
+                        rows="2"
+                      />
+                      <p className="text-xs text-gray-600 mt-1">{approvalNote.length} characters</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleApprove}
+                      className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
+                    >
+                      <FaCheck /> Confirm Approval
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditMode(false);
+                        setNewDeadline('');
+                        setApprovalNote('');
+                      }}
+                      className="flex-1 px-4 py-3 bg-gray-400 hover:bg-gray-500 text-white font-bold rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

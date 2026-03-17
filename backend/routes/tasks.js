@@ -419,7 +419,7 @@ router.post('/extension-requests/:taskId/approve', adminAuth, async (req, res) =
   try {
     console.log('🔵 APPROVE ROUTE HIT - taskId:', req.params.taskId, 'requestIndex:', req.body.requestIndex);
     
-    const { requestIndex } = req.body;
+    const { requestIndex, newDeadline, approvalNote } = req.body;
     const task = await Task.findById(req.params.taskId);
 
     if (!task) {
@@ -433,7 +433,18 @@ router.post('/extension-requests/:taskId/approve', adminAuth, async (req, res) =
     }
 
     task.extensionRequests[requestIndex].status = 'approved';
-    task.dueDate = task.extensionRequests[requestIndex].requestedDeadlineExtension;
+    task.extensionRequests[requestIndex].approvedAt = new Date();
+    task.extensionRequests[requestIndex].approvalNote = approvalNote || null;
+    
+    // Update task deadline to the new deadline if provided
+    if (newDeadline) {
+      task.dueDate = new Date(newDeadline);
+      task.extensionRequests[requestIndex].approvedDeadline = new Date(newDeadline);
+    } else if (task.extensionRequests[requestIndex].requestedDeadlineExtension) {
+      task.dueDate = task.extensionRequests[requestIndex].requestedDeadlineExtension;
+      task.extensionRequests[requestIndex].approvedDeadline = task.extensionRequests[requestIndex].requestedDeadlineExtension;
+    }
+    
     await task.save();
 
     console.log('✅ Extension approved for task:', req.params.taskId);
@@ -447,7 +458,7 @@ router.post('/extension-requests/:taskId/approve', adminAuth, async (req, res) =
 // Reject extension request (admin only) - MUST be BEFORE /:taskId/extension-request/:token
 router.post('/extension-requests/:taskId/reject', adminAuth, async (req, res) => {
   try {
-    const { requestIndex } = req.body;
+    const { requestIndex, rejectionReason } = req.body;
     const task = await Task.findById(req.params.taskId);
 
     if (!task) {
@@ -459,6 +470,8 @@ router.post('/extension-requests/:taskId/reject', adminAuth, async (req, res) =>
     }
 
     task.extensionRequests[requestIndex].status = 'rejected';
+    task.extensionRequests[requestIndex].rejectionReason = rejectionReason || 'Request not approved';
+    task.extensionRequests[requestIndex].rejectedAt = new Date();
     await task.save();
 
     console.log('✅ Extension rejected for task:', req.params.taskId);
@@ -508,6 +521,49 @@ router.post('/:taskId/extension-request/:token', async (req, res) => {
   } catch (error) {
     console.error('Error submitting extension request:', error);
     res.status(500).json({ message: 'Error submitting extension request', error: error.message });
+  }
+});
+
+// Get extension status for a task (PUBLIC - for acknowledgement page) - MUST BE BEFORE /:taskId routes
+router.get('/:taskId/extension-status/:token', async (req, res) => {
+  try {
+    const { taskId, token } = req.params;
+
+    const task = await Task.findById(taskId);
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    // Verify token is valid
+    if (task.acknowledgementToken !== token) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    // Get the most recent extension request for this task
+    const lastExtensionRequest = task.extensionRequests && task.extensionRequests.length > 0
+      ? task.extensionRequests[task.extensionRequests.length - 1]
+      : null;
+
+    if (!lastExtensionRequest) {
+      return res.status(204).end(); // No content - no extension requests yet
+    }
+
+    // Return the extension status
+    res.json({
+      status: lastExtensionRequest.status,
+      message: lastExtensionRequest.message,
+      requestedBy: lastExtensionRequest.requestedBy,
+      requestedDeadline: lastExtensionRequest.requestedDeadlineExtension,
+      requestedAt: lastExtensionRequest.requestedAt,
+      approvedDeadline: lastExtensionRequest.approvedDeadline || task.dueDate,
+      approvedAt: lastExtensionRequest.approvedAt || null,
+      approvalNote: lastExtensionRequest.approvalNote || null,
+      rejectedAt: lastExtensionRequest.rejectedAt || null,
+      rejectionReason: lastExtensionRequest.rejectionReason || null,
+    });
+  } catch (error) {
+    console.error('Error fetching extension status:', error);
+    res.status(500).json({ message: 'Error fetching extension status', error: error.message });
   }
 });
 

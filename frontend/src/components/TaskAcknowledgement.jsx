@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FaCheck, FaExclamationTriangle, FaArrowLeft, FaEnvelope, FaCheckCircle } from 'react-icons/fa';
+import { FaCheck, FaExclamationTriangle, FaArrowLeft, FaEnvelope, FaCheckCircle, FaTimes, FaInfo } from 'react-icons/fa';
 
 function TaskAcknowledgement() {
   // Extract taskId and token from URL: /acknowledge/taskId/token
@@ -15,10 +15,33 @@ function TaskAcknowledgement() {
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [selectedAction, setSelectedAction] = useState(null); // 'extension' or 'complete'
+  const [extensionStatus, setExtensionStatus] = useState(null); // Track extension request status
+  const [extensionStatusLoading, setExtensionStatusLoading] = useState(false);
 
   useEffect(() => {
     fetchTaskDetails();
   }, [token]);
+
+  const fetchExtensionStatus = async () => {
+    try {
+      setExtensionStatusLoading(true);
+      const apiBaseURL = (typeof window !== 'undefined') && (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
+        ? 'https://tasktracker-4xm2.onrender.com/api'
+        : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
+      
+      const response = await fetch(`${apiBaseURL}/tasks/${taskId}/extension-status/${token}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setExtensionStatus(data);
+      }
+      // If not found, that's okay - just means no extension status yet
+    } catch (err) {
+      console.error('Error fetching extension status:', err);
+    } finally {
+      setExtensionStatusLoading(false);
+    }
+  };
 
   const fetchTaskDetails = async () => {
     try {
@@ -46,6 +69,9 @@ function TaskAcknowledgement() {
         setProposedDeadline(data.dueDate.split('T')[0]); // Convert to YYYY-MM-DD format
       }
       setError('');
+      
+      // Fetch extension status for this task
+      await fetchExtensionStatus();
     } catch (err) {
       console.error('Error fetching task:', err);
       setError('Failed to connect to server. Please check your internet connection.');
@@ -266,6 +292,132 @@ function TaskAcknowledgement() {
               <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded">
                 <p className="text-green-700 font-semibold text-lg">{successMessage}</p>
               </div>
+            )}
+
+            {/* Extension Status Section */}
+            {extensionStatus && (
+              <>
+                {extensionStatus.status === 'rejected' && (
+                  <div className="mb-6 p-6 bg-red-50 border-2 border-red-300 rounded-lg">
+                    <div className="flex items-start gap-4">
+                      <FaTimes className="text-3xl text-red-600 flex-shrink-0 mt-1" />
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-red-800 mb-3">❌ Extension Request Rejected</h3>
+                        <div className="bg-white p-4 rounded mb-4 border-l-4 border-red-500">
+                          <p className="text-gray-800 mb-2"><strong>Reason:</strong></p>
+                          <p className="text-gray-700 text-sm italic">{extensionStatus.rejectionReason || 'No reason provided'}</p>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-4">
+                          <strong>Rejected on:</strong> {new Date(extensionStatus.rejectedAt).toLocaleDateString('en-IN', { 
+                            weekday: 'short', 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                        <p className="text-sm text-gray-700 mb-3">
+                          <strong>Current Deadline:</strong> {new Date(task.dueDate).toLocaleDateString('en-IN', { 
+                            weekday: 'short', 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric'
+                          })}
+                        </p>
+                        <p className="text-xs text-amber-700 bg-amber-100 p-3 rounded flex items-start gap-2">
+                          <FaInfo className="flex-shrink-0 mt-0.5" />
+                          <span>You can submit another extension request if you still need more time.</span>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {extensionStatus.status === 'approved' && (
+                  <div className="mb-6 p-6 bg-green-50 border-2 border-green-300 rounded-lg">
+                    <div className="flex items-start gap-4">
+                      <FaCheck className="text-3xl text-green-600 flex-shrink-0 mt-1" />
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-green-800 mb-3">✅ Extension Request Approved</h3>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <div className="bg-white p-4 rounded border-l-4 border-green-500">
+                            <p className="text-xs text-gray-600 uppercase tracking-wide font-semibold mb-1">Original Deadline</p>
+                            <p className="text-lg font-bold text-gray-800">
+                              {new Date(task.dueDate).toLocaleDateString('en-IN', { 
+                                weekday: 'short', 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: 'numeric'
+                              })}
+                            </p>
+                          </div>
+                          <div className="bg-white p-4 rounded border-l-4 border-blue-500">
+                            <p className="text-xs text-gray-600 uppercase tracking-wide font-semibold mb-1">New Deadline</p>
+                            <p className="text-lg font-bold text-blue-700">
+                              {new Date(extensionStatus.approvedDeadline).toLocaleDateString('en-IN', { 
+                                weekday: 'short', 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: 'numeric'
+                              })}
+                            </p>
+                          </div>
+                        </div>
+
+                        {extensionStatus.approvalNote && (
+                          <div className="bg-white p-4 rounded mb-4 border-l-4 border-blue-400">
+                            <p className="text-gray-700 mb-2"><strong>Admin Notes:</strong></p>
+                            <p className="text-gray-700 text-sm italic">{extensionStatus.approvalNote}</p>
+                          </div>
+                        )}
+
+                        <p className="text-sm text-gray-600">
+                          <strong>Approved on:</strong> {new Date(extensionStatus.approvedAt).toLocaleDateString('en-IN', { 
+                            weekday: 'short', 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {extensionStatus.status === 'pending' && (
+                  <div className="mb-6 p-6 bg-blue-50 border-2 border-blue-300 rounded-lg">
+                    <div className="flex items-start gap-4">
+                      <div className="text-3xl animate-pulse">⏳</div>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-blue-800 mb-2">⏸️ Extension Request Pending</h3>
+                        <p className="text-gray-700 mb-2">Your extension request is currently under review by the admin.</p>
+                        <p className="text-sm text-gray-600">
+                          <strong>Requested on:</strong> {extensionStatus.requestedAt ? new Date(extensionStatus.requestedAt).toLocaleDateString('en-IN', { 
+                            weekday: 'short', 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric'
+                          }) : 'Recently'}
+                        </p>
+                        {extensionStatus.requestedDeadline && (
+                          <p className="text-sm text-gray-600">
+                            <strong>Proposed Deadline:</strong> {new Date(extensionStatus.requestedDeadline).toLocaleDateString('en-IN', { 
+                              weekday: 'short', 
+                              year: 'numeric', 
+                              month: 'short', 
+                              day: 'numeric'
+                            })}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Action Choice Section */}
