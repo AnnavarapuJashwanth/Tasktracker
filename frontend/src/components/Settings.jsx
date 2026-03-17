@@ -7,10 +7,33 @@ function Settings() {
   const [confirmPin, setConfirmPin] = useState('');
   const [adminPhone, setAdminPhone] = useState('+919908939746');
   const [message, setMessage] = useState('');
+  const [loadingSettings, setLoadingSettings] = useState(true);
 
   useEffect(() => {
-    const saved = localStorage.getItem('adminPin');
-    if (saved) setAdminPin(saved);
+    // Load current PIN from backend (source of truth)
+    const loadCurrentPin = async () => {
+      try {
+        const response = await fetch('/api/settings/get');
+        const data = await response.json();
+        if (data.success) {
+          setAdminPin(data.adminPin);
+          localStorage.setItem('adminPin', data.adminPin);
+        } else {
+          // Fallback to localStorage
+          const saved = localStorage.getItem('adminPin');
+          if (saved) setAdminPin(saved);
+        }
+      } catch (error) {
+        console.error('Error loading PIN from backend:', error);
+        // Fallback to localStorage
+        const saved = localStorage.getItem('adminPin');
+        if (saved) setAdminPin(saved);
+      } finally {
+        setLoadingSettings(false);
+      }
+    };
+    
+    loadCurrentPin();
   }, []);
 
   const handleChangePIN = async () => {
@@ -89,6 +112,13 @@ function Settings() {
         </div>
       )}
 
+      {/* Loading State */}
+      {loadingSettings && (
+        <div className="mb-8 px-6 py-4 rounded-2xl font-semibold text-lg border-l-4 bg-blue-50 text-blue-800 border-blue-600">
+          🔄 Loading current PIN from server...
+        </div>
+      )}
+
       {/* PIN Security Section */}
       <div className="bg-white rounded-2xl shadow-md p-8 mb-10 border-t-4 border-blue-600">
         <div className="flex items-center gap-4 mb-8">
@@ -102,6 +132,12 @@ function Settings() {
         </div>
 
         <div className="space-y-6">
+          <div className="bg-green-50 border-l-4 border-green-600 rounded-lg p-4">
+            <p className="text-sm text-gray-600 font-semibold mb-1">Current Active PIN</p>
+            <p className="text-2xl font-bold text-green-600">{loadingSettings ? '••••' : adminPin || '****'}</p>
+            <p className="text-xs text-gray-600 mt-2">✓ This PIN is stored in the database and synced across all devices</p>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-bold text-gray-700 uppercase mb-3">New PIN</label>
@@ -137,7 +173,7 @@ function Settings() {
 
           <div className="bg-blue-50 border-l-4 border-blue-600 rounded-lg p-4">
             <p className="text-sm text-gray-700">
-              <span className="font-bold">🔐 Security Tip:</span> Use a memorable 4-digit PIN. This PIN is stored locally on your device for security.
+              <span className="font-bold">🔐 Security Update:</span> Your PIN is now stored securely in our database. Changes take effect immediately and work across all devices. After logout, use your new PIN to login.
             </p>
           </div>
         </div>
