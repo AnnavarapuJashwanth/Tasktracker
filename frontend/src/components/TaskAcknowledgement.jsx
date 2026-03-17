@@ -253,8 +253,16 @@ function TaskAcknowledgement() {
       <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-lg shadow-lg p-8 max-w-md text-center">
           <FaExclamationTriangle className="text-4xl text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Error</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">⚠️ Error Loading Task</h2>
+          <p className="text-gray-600 mb-4 font-mono text-sm bg-red-50 p-3 rounded">{error}</p>
+          <p className="text-gray-500 text-xs mb-4">
+            <strong>Debug Info:</strong><br/>
+            Token: {token ? token.substring(0, 20) + '...' : 'None'}<br/>
+            Task ID: {taskId}<br/>
+            API: {window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+              ? 'https://tasktracker-4xm2.onrender.com/api'
+              : 'http://localhost:5000/api'}
+          </p>
           <a
             href="/"
             className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
