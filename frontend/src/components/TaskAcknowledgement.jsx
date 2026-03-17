@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FaCheck, FaExclamationTriangle, FaArrowLeft, FaEnvelope } from 'react-icons/fa';
+import { FaCheck, FaExclamationTriangle, FaArrowLeft, FaEnvelope, FaCheckCircle } from 'react-icons/fa';
 
 function TaskAcknowledgement() {
   // Extract taskId and token from URL: /acknowledge/taskId/token
@@ -14,6 +14,7 @@ function TaskAcknowledgement() {
   const [proposedDeadline, setProposedDeadline] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [selectedAction, setSelectedAction] = useState(null); // 'extension' or 'complete'
 
   useEffect(() => {
     fetchTaskDetails();
@@ -92,6 +93,40 @@ function TaskAcknowledgement() {
     } catch (err) {
       console.error('Error submitting extension request:', err);
       setError('Failed to submit request. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleMarkComplete = async () => {
+    try {
+      setSubmitting(true);
+      setError('');
+      setSuccessMessage('');
+
+      const apiBaseURL = (typeof window !== 'undefined') && (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
+        ? 'https://tasktracker-4xm2.onrender.com/api'
+        : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
+
+      const response = await fetch(`${apiBaseURL}/tasks/acknowledge/${token}/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.message || 'Failed to mark task as complete');
+        return;
+      }
+
+      const data = await response.json();
+      setSuccessMessage('✅ Task marked as complete! Thank you for finishing this task.');
+      setTask({ ...task, status: 'Completed' });
+    } catch (err) {
+      console.error('Error marking task complete:', err);
+      setError('Failed to mark task as complete. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -233,60 +268,140 @@ function TaskAcknowledgement() {
               </div>
             )}
 
-            {/* Extension Request Form */}
-            <div className="bg-gradient-to-br from-orange-50 to-yellow-50 p-6 rounded-lg border-2 border-orange-200 mb-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <FaEnvelope className="text-orange-500" />
-                Request Deadline Extension
-              </h3>
+            {/* Action Choice Section */}
+            <div className="mb-8">
+              <h3 className="text-2xl font-bold text-gray-800 mb-4 text-center">What would you like to do?</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Extension Request Button */}
+                <button
+                  onClick={() => setSelectedAction('extension')}
+                  className={`p-6 rounded-lg border-2 transition-all transform hover:scale-105 ${
+                    selectedAction === 'extension'
+                      ? 'border-orange-500 bg-orange-50 shadow-lg'
+                      : 'border-gray-300 bg-white hover:border-orange-300 hover:shadow-md'
+                  }`}
+                >
+                  <FaEnvelope className={`text-3xl mb-3 mx-auto ${selectedAction === 'extension' ? 'text-orange-500' : 'text-gray-600'}`} />
+                  <h4 className={`font-bold text-lg mb-2 ${selectedAction === 'extension' ? 'text-orange-600' : 'text-gray-800'}`}>
+                    Request Extension
+                  </h4>
+                  <p className="text-sm text-gray-600">Need more time to complete this task?</p>
+                </button>
 
-              {/* Message Input */}
-              <div className="mb-4">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Your Message *
-                </label>
-                <textarea
-                  value={extensionMessage}
-                  onChange={(e) => setExtensionMessage(e.target.value)}
-                  placeholder="Please explain why you need more time... (e.g., 'Waiting for client approval', 'Need additional resources', etc.)"
-                  className="w-full px-4 py-3 border-2 border-orange-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 resize-none text-gray-700"
-                  rows="4"
-                  disabled={successMessage ? true : false}
-                />
-                <p className="text-xs text-gray-500 mt-1">{extensionMessage.length} characters</p>
+                {/* Mark Complete Button */}
+                <button
+                  onClick={() => setSelectedAction('complete')}
+                  className={`p-6 rounded-lg border-2 transition-all transform hover:scale-105 ${
+                    selectedAction === 'complete'
+                      ? 'border-green-500 bg-green-50 shadow-lg'
+                      : 'border-gray-300 bg-white hover:border-green-300 hover:shadow-md'
+                  }`}
+                >
+                  <FaCheckCircle className={`text-3xl mb-3 mx-auto ${selectedAction === 'complete' ? 'text-green-500' : 'text-gray-600'}`} />
+                  <h4 className={`font-bold text-lg mb-2 ${selectedAction === 'complete' ? 'text-green-600' : 'text-gray-800'}`}>
+                    Mark as Complete
+                  </h4>
+                  <p className="text-sm text-gray-600">Task is done? Mark it complete now!</p>
+                </button>
               </div>
-
-              {/* Proposed Deadline */}
-              <div className="mb-6">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Proposed New Deadline (Optional)
-                </label>
-                <input
-                  type="date"
-                  value={proposedDeadline}
-                  onChange={(e) => setProposedDeadline(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-orange-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 text-gray-700"
-                  disabled={successMessage ? true : false}
-                />
-                <p className="text-xs text-gray-500 mt-1">Leave blank if no specific date in mind</p>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                onClick={handleSubmitExtensionRequest}
-                disabled={submitting || successMessage ? true : false}
-                className="w-full px-6 py-4 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 disabled:from-gray-400 disabled:to-gray-400 text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-all disabled:cursor-not-allowed transform hover:scale-105 disabled:scale-100"
-              >
-                <FaEnvelope />
-                {submitting ? 'Sending...' : 'Send Request to Admin'}
-              </button>
-
-              {successMessage && (
-                <p className="text-xs text-green-700 font-semibold mt-3 text-center">
-                  ✅ Admin will review your request and get back to you soon!
-                </p>
-              )}
             </div>
+
+            {/* Extension Request Form */}
+            {selectedAction === 'extension' && (
+              <div className="bg-gradient-to-br from-orange-50 to-yellow-50 p-6 rounded-lg border-2 border-orange-200 mb-6">
+                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <FaEnvelope className="text-orange-500" />
+                  Request Deadline Extension
+                </h3>
+
+                {/* Message Input */}
+                <div className="mb-4">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Your Message *
+                  </label>
+                  <textarea
+                    value={extensionMessage}
+                    onChange={(e) => setExtensionMessage(e.target.value)}
+                    placeholder="Please explain why you need more time... (e.g., 'Waiting for client approval', 'Need additional resources', etc.)"
+                    className="w-full px-4 py-3 border-2 border-orange-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 resize-none text-gray-700"
+                    rows="4"
+                    disabled={successMessage ? true : false}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">{extensionMessage.length} characters</p>
+                </div>
+
+                {/* Proposed Deadline */}
+                <div className="mb-6">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Proposed New Deadline (Optional)
+                  </label>
+                  <input
+                    type="date"
+                    value={proposedDeadline}
+                    onChange={(e) => setProposedDeadline(e.target.value)}
+                    className="w-full px-4 py-3 border-2 border-orange-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-200 text-gray-700"
+                    disabled={successMessage ? true : false}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Leave blank if no specific date in mind</p>
+                </div>
+
+                {/* Submit Button */}
+                <button
+                  onClick={handleSubmitExtensionRequest}
+                  disabled={submitting || successMessage ? true : false}
+                  className="w-full px-6 py-4 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 disabled:from-gray-400 disabled:to-gray-400 text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-all disabled:cursor-not-allowed transform hover:scale-105 disabled:scale-100"
+                >
+                  <FaEnvelope />
+                  {submitting ? 'Sending...' : 'Send Request to Admin'}
+                </button>
+
+                {successMessage && (
+                  <p className="text-xs text-green-700 font-semibold mt-3 text-center">
+                    ✅ Admin will review your request and get back to you soon!
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Mark Complete Form */}
+            {selectedAction === 'complete' && (
+              <div className="bg-gradient-to-br from-green-50 to-teal-50 p-6 rounded-lg border-2 border-green-200 mb-6">
+                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+                  <FaCheckCircle className="text-green-500" />
+                  Confirm Task Completion
+                </h3>
+
+                <div className="mb-6 p-4 bg-white rounded border border-green-300">
+                  <p className="text-gray-700 text-center mb-4">
+                    By clicking the button below, you confirm that this task has been completed successfully.
+                  </p>
+                  <div className="bg-green-100 p-4 rounded mb-4">
+                    <p className="text-green-800 font-semibold text-center">
+                      📋 {task.title}
+                    </p>
+                  </div>
+                  <p className="text-gray-600 text-sm text-center">
+                    This action cannot be undone. The task status will be updated to "Completed".
+                  </p>
+                </div>
+
+                {/* Confirm Button */}
+                <button
+                  onClick={handleMarkComplete}
+                  disabled={submitting || successMessage ? true : false}
+                  className="w-full px-6 py-4 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 disabled:from-gray-400 disabled:to-gray-400 text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-all disabled:cursor-not-allowed transform hover:scale-105 disabled:scale-100"
+                >
+                  <FaCheckCircle />
+                  {submitting ? 'Marking Complete...' : 'Confirm Task Completion'}
+                </button>
+
+                {successMessage && (
+                  <p className="text-xs text-green-700 font-semibold mt-3 text-center">
+                    ✅ Thank you! Your task has been marked as complete!
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Info */}
             <p className="text-center text-sm text-gray-500">

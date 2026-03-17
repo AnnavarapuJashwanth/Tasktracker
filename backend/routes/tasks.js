@@ -369,9 +369,98 @@ router.post('/acknowledge/:token/complete', async (req, res) => {
 
 // ============ END ACKNOWLEDGEMENT ROUTES ============
 
-// ===== EXTENSION REQUEST ENDPOINTS (MUST BE BEFORE GENERIC :id ROUTE) =====
+// ===== EXTENSION REQUEST ADMIN ENDPOINTS (MUST BE BEFORE /:taskId/... ROUTES) =====
 
-// Submit extension request (from acknowledgement page)
+// Get all extension requests (admin only) - MUST be BEFORE /:taskId/extension-request/:token
+router.get('/extension-requests/all', adminAuth, async (req, res) => {
+  try {
+    const tasks = await Task.find({ 'extensionRequests.0': { $exists: true } })
+      .sort({ 'extensionRequests.requestedAt': -1 });
+
+    // Flatten extension requests with task info
+    const allRequests = [];
+    tasks.forEach((task) => {
+      if (task.extensionRequests && task.extensionRequests.length > 0) {
+        task.extensionRequests.forEach((request) => {
+          if (request.status === 'pending') {
+            allRequests.push({
+              _id: task._id,
+              taskTitle: task.title,
+              taskDescription: task.description,
+              assignedToContact: task.assignedToContact,
+              assignedToPhone: task.assignedToPhone,
+              currentDueDate: task.dueDate,
+              priority: task.priority,
+              category: task.category,
+              sector: task.sector,
+              ...request.toObject(),
+            });
+          }
+        });
+      }
+    });
+
+    res.json(allRequests);
+  } catch (error) {
+    console.error('Error fetching extension requests:', error);
+    res.status(500).json({ message: 'Error fetching extension requests', error: error.message });
+  }
+});
+
+// Approve extension request (admin only) - MUST be BEFORE /:taskId/extension-request/:token
+router.post('/extension-requests/:taskId/approve', adminAuth, async (req, res) => {
+  try {
+    const { requestIndex } = req.body;
+    const task = await Task.findById(req.params.taskId);
+
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    if (!task.extensionRequests[requestIndex]) {
+      return res.status(404).json({ message: 'Extension request not found' });
+    }
+
+    task.extensionRequests[requestIndex].status = 'approved';
+    task.dueDate = task.extensionRequests[requestIndex].requestedDeadlineExtension;
+    await task.save();
+
+    console.log('✅ Extension approved for task:', req.params.taskId);
+    res.json({ message: 'Extension approved', task });
+  } catch (error) {
+    console.error('Error approving extension:', error);
+    res.status(500).json({ message: 'Error approving extension', error: error.message });
+  }
+});
+
+// Reject extension request (admin only) - MUST be BEFORE /:taskId/extension-request/:token
+router.post('/extension-requests/:taskId/reject', adminAuth, async (req, res) => {
+  try {
+    const { requestIndex } = req.body;
+    const task = await Task.findById(req.params.taskId);
+
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    if (!task.extensionRequests[requestIndex]) {
+      return res.status(404).json({ message: 'Extension request not found' });
+    }
+
+    task.extensionRequests[requestIndex].status = 'rejected';
+    await task.save();
+
+    console.log('✅ Extension rejected for task:', req.params.taskId);
+    res.json({ message: 'Extension rejected', task });
+  } catch (error) {
+    console.error('Error rejecting extension:', error);
+    res.status(500).json({ message: 'Error rejecting extension', error: error.message });
+  }
+});
+
+// ===== EXTENSION REQUEST PUBLIC ENDPOINTS (MUST BE AFTER /extension-requests/... admin routes) =====
+
+// Submit extension request (from acknowledgement page) - PUBLIC endpoint
 router.post('/:taskId/extension-request/:token', async (req, res) => {
   try {
     const { message, requestedDeadline } = req.body;
@@ -408,93 +497,6 @@ router.post('/:taskId/extension-request/:token', async (req, res) => {
   } catch (error) {
     console.error('Error submitting extension request:', error);
     res.status(500).json({ message: 'Error submitting extension request', error: error.message });
-  }
-});
-
-// Get all extension requests (admin only)
-router.get('/extension-requests/all', adminAuth, async (req, res) => {
-  try {
-    const tasks = await Task.find({ 'extensionRequests.0': { $exists: true } })
-      .sort({ 'extensionRequests.requestedAt': -1 });
-
-    // Flatten extension requests with task info
-    const allRequests = [];
-    tasks.forEach((task) => {
-      if (task.extensionRequests && task.extensionRequests.length > 0) {
-        task.extensionRequests.forEach((request) => {
-          if (request.status === 'pending') {
-            allRequests.push({
-              _id: task._id,
-              taskTitle: task.title,
-              taskDescription: task.description,
-              assignedToContact: task.assignedToContact,
-              assignedToPhone: task.assignedToPhone,
-              currentDueDate: task.dueDate,
-              priority: task.priority,
-              category: task.category,
-              sector: task.sector,
-              ...request.toObject(),
-            });
-          }
-        });
-      }
-    });
-
-    res.json(allRequests);
-  } catch (error) {
-    console.error('Error fetching extension requests:', error);
-    res.status(500).json({ message: 'Error fetching extension requests', error: error.message });
-  }
-});
-
-// Approve extension request (admin only)
-router.post('/extension-requests/:taskId/approve', adminAuth, async (req, res) => {
-  try {
-    const { requestIndex } = req.body;
-    const task = await Task.findById(req.params.taskId);
-
-    if (!task) {
-      return res.status(404).json({ message: 'Task not found' });
-    }
-
-    if (!task.extensionRequests[requestIndex]) {
-      return res.status(404).json({ message: 'Extension request not found' });
-    }
-
-    task.extensionRequests[requestIndex].status = 'approved';
-    task.dueDate = task.extensionRequests[requestIndex].requestedDeadlineExtension;
-    await task.save();
-
-    console.log('✅ Extension approved for task:', req.params.taskId);
-    res.json({ message: 'Extension approved', task });
-  } catch (error) {
-    console.error('Error approving extension:', error);
-    res.status(500).json({ message: 'Error approving extension', error: error.message });
-  }
-});
-
-// Reject extension request (admin only)
-router.post('/extension-requests/:taskId/reject', adminAuth, async (req, res) => {
-  try {
-    const { requestIndex } = req.body;
-    const task = await Task.findById(req.params.taskId);
-
-    if (!task) {
-      return res.status(404).json({ message: 'Task not found' });
-    }
-
-    if (!task.extensionRequests[requestIndex]) {
-      return res.status(404).json({ message: 'Extension request not found' });
-    }
-
-    task.extensionRequests[requestIndex].status = 'rejected';
-    await task.save();
-
-    console.log('✅ Extension rejected for task:', req.params.taskId);
-    res.json({ message: 'Extension rejected', task });
-  } catch (error) {
-    console.error('Error rejecting extension:', error);
-    res.status(500).json({ message: 'Error rejecting extension', error: error.message });
   }
 });
 
