@@ -543,6 +543,42 @@ function TaskAcknowledgement() {
             {/* Action Choice Section */}
             <div className="mb-8">
               <h3 className="text-2xl font-bold text-gray-800 mb-4 text-center">What would you like to do?</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Extension Request Button */}
+                <button
+                  onClick={() => setSelectedAction('extension')}
+                  className={`p-6 rounded-lg border-2 transition-all transform hover:scale-105 ${
+                    selectedAction === 'extension'
+                      ? 'border-orange-500 bg-orange-50 shadow-lg'
+                      : 'border-gray-300 bg-white hover:border-orange-300 hover:shadow-md'
+                  }`}
+                >
+                  <FaEnvelope className={`text-3xl mb-3 mx-auto ${selectedAction === 'extension' ? 'text-orange-500' : 'text-gray-600'}`} />
+                  <h4 className={`font-bold text-lg mb-2 ${selectedAction === 'extension' ? 'text-orange-600' : 'text-gray-800'}`}>
+                    Request Extension
+                  </h4>
+                  <p className="text-sm text-gray-600">Need more time to complete this task?</p>
+                </button>
+
+                {/* Mark Complete Button */}
+                <button
+                  onClick={() => setSelectedAction('complete')}
+                  className={`p-6 rounded-lg border-2 transition-all transform hover:scale-105 ${
+                    selectedAction === 'complete'
+                      ? 'border-green-500 bg-green-50 shadow-lg'
+                      : 'border-gray-300 bg-white hover:border-green-300 hover:shadow-md'
+                  }`}
+                >
+                  <FaCheckCircle className={`text-3xl mb-3 mx-auto ${selectedAction === 'complete' ? 'text-green-500' : 'text-gray-600'}`} />
+                  <h4 className={`font-bold text-lg mb-2 ${selectedAction === 'complete' ? 'text-green-600' : 'text-gray-800'}`}>
+                    Mark as Complete
+                  </h4>
+                  <p className="text-sm text-gray-600">Task is done? Mark it complete now!</p>
+                </button>
+              </div>
+            </div>
+
+            {/* Extension Request Form */}
             {selectedAction === 'extension' && (
               <div className="bg-gradient-to-br from-orange-50 to-yellow-50 p-6 rounded-lg border-2 border-orange-200 mb-6">
                 <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
