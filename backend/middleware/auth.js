@@ -6,11 +6,11 @@ export const adminAuth = async (req, res, next) => {
     // Get PIN from headers (Express converts headers to lowercase)
     const adminPin = req.headers.adminpin || req.headers['admin-pin'] || req.headers.adminpin;
     
-    const envPin = process.env.ADMIN_PIN || '1234';
-    let expectedPin = envPin;
+    let expectedPin = '1234'; // Default fallback
+    let pinSource = 'default';
     
     try {
-      // Try to fetch PIN from database with a short timeout
+      // DATABASE IS SOURCE OF TRUTH - Fetch PIN from database with timeout
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('DB timeout')), 2000)
       );
@@ -18,28 +18,33 @@ export const adminAuth = async (req, res, next) => {
       const dbFetch = Settings.findOne();
       const settings = await Promise.race([dbFetch, timeoutPromise]);
       
-      if (settings) {
-        // If database PIN doesn't match env PIN, reset it
-        if (settings.adminPin !== envPin) {
-          console.log('⚠️  Database PIN mismatches env PIN. Resetting to env PIN:', envPin);
-          settings.adminPin = envPin;
-          try {
-            await settings.save();
-            console.log('✅ Updated database PIN to match env PIN');
-          } catch (updateError) {
-            console.warn('⚠️  Could not update PIN:', updateError.message);
-          }
+      if (settings && settings.adminPin) {
+        expectedPin = settings.adminPin;
+        pinSource = 'database (source of truth)';
+        console.log('🔐 Auth Check - Using PIN from DATABASE:', expectedPin);
+      } else {
+        // Create settings if doesn't exist
+        expectedPin = process.env.ADMIN_PIN || '1234';
+        pinSource = 'environment (creating new)';
+        const newSettings = new Settings({
+          adminPin: expectedPin,
+          adminPhone: '+919908939746',
+        });
+        try {
+          await newSettings.save();
+          console.log('✅ Created settings in database');
+        } catch (saveError) {
+          console.warn('⚠️  Could not save settings:', saveError.message);
         }
-        expectedPin = envPin; // Always use env PIN
-        console.log('🔐 Auth Check - Using PIN from environment:', expectedPin);
       }
     } catch (dbError) {
-      // Database unavailable, use env PIN
-      console.warn('⚠️  Database unavailable, using environment PIN:', dbError.message);
-      expectedPin = envPin;
+      // Database unavailable - use env PIN as fallback
+      expectedPin = process.env.ADMIN_PIN || '1234';
+      pinSource = 'environment (database timeout - fallback)';
+      console.warn('⚠️  Database unavailable for auth, using fallback PIN:', dbError.message);
     }
     
-    console.log('🔐 Auth Check - Received PIN:', adminPin, 'Expected PIN:', expectedPin);
+    console.log('🔐 Auth Check - Expected PIN from', pinSource + ':', expectedPin, '| Received:', adminPin);
     
     if (!adminPin || adminPin !== expectedPin) {
       console.log('❌ Auth failed. Expected:', expectedPin, 'Got:', adminPin);

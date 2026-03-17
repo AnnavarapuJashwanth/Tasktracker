@@ -61,18 +61,13 @@ function Settings() {
         localStorage.setItem('adminPin', newPin);
         setAdminPin(newPin);
         
-        // Sync PIN to .env file on backend (automatically updates local development)
-        try {
-          await settingsAPI.syncEnv();
-          console.log('✅ PIN synced to .env file automatically');
-        } catch (syncError) {
-          console.warn('⚠️  Could not sync to .env (production environment)', syncError.message);
-        }
+        // Database is now the source of truth - all backends will automatically use new PIN
+        // No need to sync .env files - database handles everything!
         
         // Dispatch custom event to update other components
         window.dispatchEvent(new CustomEvent('pinUpdated', { detail: { pin: newPin } }));
         
-        setMessage('✓ PIN updated successfully! New PIN will work after next login.');
+        setMessage('✓ PIN updated successfully! All environments will automatically use the new PIN.');
         setNewPin('');
         setConfirmPin('');
         setTimeout(() => setMessage(''), 3000);
