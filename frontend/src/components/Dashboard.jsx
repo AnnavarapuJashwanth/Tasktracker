@@ -15,11 +15,9 @@ function Dashboard({ adminPin, onNavigateToTasks }) {
       loadStats();
     }, 100);
     
-    // Only refresh once per minute to reduce unnecessary reloads
-    const interval = setInterval(loadStats, 60000);
+    // Load stats once on mount only - no auto-refresh to prevent excessive reloading
     return () => {
       clearTimeout(timer);
-      clearInterval(interval);
     };
   }, [adminPin]);
 
