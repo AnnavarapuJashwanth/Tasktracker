@@ -8,15 +8,36 @@ function TaskHistory() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [filter, setFilter] = useState('all'); // all, pending, approved, rejected
 
+  // Get the correct API URL based on environment
+  const getAPIBaseURL = () => {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      const isProduction = hostname !== 'localhost' && hostname !== '127.0.0.1';
+      
+      if (isProduction) {
+        return 'https://tasktracker-4xm2.onrender.com/api';
+      }
+    }
+    return 'http://localhost:5000/api';
+  };
+
   useEffect(() => {
     fetchTaskHistory();
+    
+    // Auto-refresh task history every 5 seconds to show real-time updates
+    const refreshInterval = setInterval(() => {
+      fetchTaskHistory();
+    }, 5000);
+    
+    return () => clearInterval(refreshInterval);
   }, []);
 
   const fetchTaskHistory = async () => {
     try {
       setLoading(true);
       const adminPin = localStorage.getItem('adminPin') || '1234';
-      const response = await fetch('http://localhost:5000/api/tasks/all', {
+      const apiBaseURL = getAPIBaseURL();
+      const response = await fetch(`${apiBaseURL}/tasks/all`, {
         headers: {
           'admin-pin': adminPin,
           'Content-Type': 'application/json',

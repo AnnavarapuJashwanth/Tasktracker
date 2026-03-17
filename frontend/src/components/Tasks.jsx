@@ -28,6 +28,13 @@ function Tasks({ adminPin }) {
 
   useEffect(() => {
     loadTasks();
+    
+    // Auto-refresh tasks every 5 seconds to show real-time updates
+    const refreshInterval = setInterval(() => {
+      loadTasks();
+    }, 5000);
+    
+    return () => clearInterval(refreshInterval);
   }, [adminPin, selectedSector]);
 
   useEffect(() => {
