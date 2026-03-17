@@ -16,6 +16,7 @@ router.post('/login', async (req, res) => {
     }
 
     let expectedPin = process.env.ADMIN_PIN || '1234';
+    const envPin = process.env.ADMIN_PIN || '1234';
 
     try {
       // Try to get PIN from database with timeout
@@ -27,23 +28,35 @@ router.post('/login', async (req, res) => {
       const settings = await Promise.race([dbFetch, timeoutPromise]);
       
       if (settings) {
-        expectedPin = settings.adminPin;
-        console.log('✅ Using PIN from database');
+        // If database PIN doesn't match env PIN, update it to env PIN
+        if (settings.adminPin !== envPin) {
+          console.log('⚠️  Database PIN mismatches env PIN. Resetting to env PIN:', envPin);
+          settings.adminPin = envPin;
+          try {
+            await settings.save();
+            console.log('✅ Updated database PIN to match env PIN');
+          } catch (updateError) {
+            console.warn('⚠️  Could not update PIN:', updateError.message);
+          }
+        }
+        expectedPin = envPin; // Always use env PIN
+        console.log('✅ Using PIN from environment:', expectedPin);
       } else {
         // Create settings with env PIN if doesn't exist
         const newSettings = new Settings({
-          adminPin: expectedPin,
+          adminPin: envPin,
           adminPhone: '+919908939746',
         });
         try {
           await newSettings.save();
+          console.log('✅ Created settings with env PIN');
         } catch (saveError) {
           console.warn('⚠️  Could not save settings:', saveError.message);
         }
       }
     } catch (dbError) {
       console.warn('⚠️  Database unavailable for login, using environment PIN:', dbError.message);
-      expectedPin = process.env.ADMIN_PIN || '1234';
+      expectedPin = envPin;
     }
 
     console.log('Login attempt - Received PIN:', pin, 'Expected PIN:', expectedPin);

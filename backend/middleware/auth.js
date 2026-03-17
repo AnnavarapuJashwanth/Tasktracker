@@ -6,7 +6,8 @@ export const adminAuth = async (req, res, next) => {
     // Get PIN from headers (Express converts headers to lowercase)
     const adminPin = req.headers.adminpin || req.headers['admin-pin'] || req.headers.adminpin;
     
-    let expectedPin = process.env.ADMIN_PIN || '1234';
+    const envPin = process.env.ADMIN_PIN || '1234';
+    let expectedPin = envPin;
     
     try {
       // Try to fetch PIN from database with a short timeout
@@ -17,14 +18,25 @@ export const adminAuth = async (req, res, next) => {
       const dbFetch = Settings.findOne();
       const settings = await Promise.race([dbFetch, timeoutPromise]);
       
-      if (settings && settings.adminPin) {
-        expectedPin = settings.adminPin;
-        console.log('🔐 Auth Check - Using PIN from database');
+      if (settings) {
+        // If database PIN doesn't match env PIN, reset it
+        if (settings.adminPin !== envPin) {
+          console.log('⚠️  Database PIN mismatches env PIN. Resetting to env PIN:', envPin);
+          settings.adminPin = envPin;
+          try {
+            await settings.save();
+            console.log('✅ Updated database PIN to match env PIN');
+          } catch (updateError) {
+            console.warn('⚠️  Could not update PIN:', updateError.message);
+          }
+        }
+        expectedPin = envPin; // Always use env PIN
+        console.log('🔐 Auth Check - Using PIN from environment:', expectedPin);
       }
     } catch (dbError) {
       // Database unavailable, use env PIN
       console.warn('⚠️  Database unavailable, using environment PIN:', dbError.message);
-      expectedPin = process.env.ADMIN_PIN || '1234';
+      expectedPin = envPin;
     }
     
     console.log('🔐 Auth Check - Received PIN:', adminPin, 'Expected PIN:', expectedPin);

@@ -25,14 +25,16 @@ function Login({ onLogin }) {
       const response = await authAPI.login(pin);
       console.log('Login response:', response.data);
       
-      if (response.data.success) {
+      if (response.status === 200 && response.data.success) {
+        console.log('✅ Login successful, storing PIN in localStorage');
         onLogin(pin);
       } else {
-        setError(response.data.message || 'Login failed');
+        setError(response.data?.message || 'Login failed');
       }
     } catch (err) {
-      console.error('Login error details:', err);
-      setError(err.response?.data?.message || 'Invalid PIN - Check console for details');
+      console.error('❌ Login error:', err.response?.status, err.response?.data?.message);
+      console.log('Error details:', err.response?.data);
+      setError(err.response?.data?.message || 'Invalid PIN - access denied');
     } finally {
       setLoading(false);
     }
