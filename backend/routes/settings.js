@@ -3,6 +3,35 @@ import Settings from '../models/Settings.js';
 
 const router = express.Router();
 
+// DEBUG: Check current PIN in database (without auth - for debugging only)
+router.get('/check-pin', async (req, res) => {
+  try {
+    let settings = await Settings.findOne();
+    
+    if (!settings) {
+      settings = new Settings({
+        adminPin: process.env.ADMIN_PIN || '1234',
+        adminPhone: '+919908939746',
+      });
+      await settings.save();
+    }
+
+    console.log('🔍 Current PIN in database:', settings.adminPin);
+    res.json({
+      currentPin: settings.adminPin,
+      fromDatabase: true,
+      message: 'This is the PIN currently stored in the database. Use this to login.'
+    });
+  } catch (error) {
+    console.error('Error checking PIN:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error checking PIN',
+      error: error.message,
+    });
+  }
+});
+
 // Get current settings
 router.get('/get', async (req, res) => {
   try {
