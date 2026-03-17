@@ -477,6 +477,31 @@ function TaskAcknowledgement() {
               </>
             )}
 
+            {/* PROMINENT: Mark as Complete Button - Inside Task Card */}
+            <div className="mb-8 p-6 bg-gradient-to-r from-green-400 to-emerald-400 rounded-lg border-3 border-green-600 shadow-xl">
+              <h3 className="text-center text-green-900 font-bold text-lg mb-4">✅ Task Completed?</h3>
+              <button
+                onClick={handleMarkComplete}
+                disabled={submitting || task.status === 'Completed'}
+                className={`w-full px-6 py-4 rounded-lg font-bold text-xl transition-all flex items-center justify-center gap-3 ${
+                  task.status === 'Completed'
+                    ? 'bg-gray-500 text-white cursor-not-allowed'
+                    : 'bg-white text-green-700 hover:bg-green-50 shadow-lg hover:shadow-xl'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {submitting ? (
+                  <>⏳ Marking as Complete...</>
+                ) : (
+                  <>
+                    🎉 Mark This Task as Complete
+                  </>
+                )}
+              </button>
+              {task.status === 'Completed' && (
+                <p className="text-center text-green-900 font-bold mt-3">✓ Task already completed!</p>
+              )}
+            </div>
+
             {/* Action Choice Section */}
             <div className="mb-8">
               <h3 className="text-2xl font-bold text-gray-800 mb-4 text-center">What would you like to do?</h3>
