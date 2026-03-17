@@ -367,6 +367,60 @@ router.post('/acknowledge/:token/complete', async (req, res) => {
   }
 });
 
+// Update task progress via acknowledgement link (public endpoint - no auth needed)
+router.post('/acknowledge/:token/progress', async (req, res) => {
+  try {
+    const { progress } = req.body; // 'in-progress', '50-percent', 'completed'
+    const task = await Task.findOne({ 
+      acknowledgementToken: req.params.token
+    });
+
+    if (!task) {
+      return res.status(404).json({ message: 'Invalid acknowledgement link' });
+    }
+
+    // Store progress update
+    if (!task.progressUpdates) {
+      task.progressUpdates = [];
+    }
+
+    task.progressUpdates.push({
+      status: progress,
+      updatedAt: new Date(),
+    });
+
+    // If progress is 'completed', mark task as complete
+    if (progress === 'completed') {
+      task.status = 'Completed';
+      task.acknowledgedAt = new Date();
+      
+      if (task.startTime) {
+        const durationMs = new Date() - task.startTime;
+        const hours = Math.floor(durationMs / 3600000);
+        const minutes = Math.floor((durationMs % 3600000) / 60000);
+        const seconds = Math.floor((durationMs % 60000) / 1000);
+        task.duration = `${hours}h ${minutes}m ${seconds}s`;
+      }
+    }
+
+    task.updatedAt = new Date();
+    await task.save();
+
+    res.json({ 
+      message: 'Progress updated successfully', 
+      progress: task.progressUpdates[task.progressUpdates.length - 1],
+      task: {
+        _id: task._id,
+        title: task.title,
+        status: task.status,
+      }
+    });
+  } catch (error) {
+    console.error('Error updating task progress:', error);
+    res.status(500).json({ message: 'Error updating task progress', error: error.message });
+  }
+});
+
 // ============ END ACKNOWLEDGEMENT ROUTES ============
 
 // ===== EXTENSION REQUEST ADMIN ENDPOINTS (MUST BE BEFORE /:taskId/... ROUTES) =====

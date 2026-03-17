@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FaHome, FaTasks, FaPhone, FaCog, FaSignOutAlt } from 'react-icons/fa';
+import { FaHome, FaTasks, FaPhone, FaCog, FaSignOutAlt, FaHistory } from 'react-icons/fa';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Tasks from './components/Tasks';
 import Contacts from './components/Contacts';
 import Settings from './components/Settings';
+import TaskHistory from './components/TaskHistory';
 import TaskAcknowledgement from './components/TaskAcknowledgement';
 
 function App() {
@@ -121,6 +122,18 @@ function App() {
           <li>
             <button
               className={`w-full px-6 py-3 text-left flex items-center gap-4 rounded-lg transition-all duration-200 font-medium ${
+                activeTab === 'history'
+                  ? 'bg-gradient-to-r from-indigo-600 to-blue-600 shadow-lg border-l-4 border-indigo-300'
+                  : 'hover:bg-slate-700 border-l-4 border-transparent hover:border-indigo-500'
+              }`}
+              onClick={() => handleTabChange('history')}
+            >
+              <FaHistory className="text-lg" /> History
+            </button>
+          </li>
+          <li>
+            <button
+              className={`w-full px-6 py-3 text-left flex items-center gap-4 rounded-lg transition-all duration-200 font-medium ${
                 activeTab === 'settings'
                   ? 'bg-gradient-to-r from-indigo-600 to-blue-600 shadow-lg border-l-4 border-indigo-300'
                   : 'hover:bg-slate-700 border-l-4 border-transparent hover:border-indigo-500'
@@ -157,6 +170,7 @@ function App() {
         {activeTab === 'dashboard' && <Dashboard adminPin={adminPin} />}
         {activeTab === 'tasks' && <Tasks adminPin={adminPin} />}
         {activeTab === 'contacts' && <Contacts />}
+        {activeTab === 'history' && <TaskHistory />}
         {activeTab === 'settings' && <Settings />}
       </main>
     </div>

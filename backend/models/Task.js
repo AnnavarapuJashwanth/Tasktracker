@@ -116,6 +116,22 @@ const taskSchema = new mongoose.Schema({
         type: String,
         default: null, // admin notes when approving
       },
+      approvedDeadline: {
+        type: Date,
+        default: null, // the new deadline after approval
+      },
+    },
+  ],
+  progressUpdates: [
+    {
+      status: {
+        type: String,
+        enum: ['in-progress', '50-percent', 'completed'],
+      },
+      updatedAt: {
+        type: Date,
+        default: Date.now,
+      },
     },
   ],
   createdBy: {

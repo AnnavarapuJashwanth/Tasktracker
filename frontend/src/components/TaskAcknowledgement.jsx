@@ -17,6 +17,7 @@ function TaskAcknowledgement() {
   const [selectedAction, setSelectedAction] = useState(null); // 'extension' or 'complete'
   const [extensionStatus, setExtensionStatus] = useState(null); // Track extension request status
   const [extensionStatusLoading, setExtensionStatusLoading] = useState(false);
+  const [taskProgress, setTaskProgress] = useState(null); // Track task progress: null, 'in-progress', '50-percent', 'completed'
 
   useEffect(() => {
     fetchTaskDetails();
@@ -153,6 +154,41 @@ function TaskAcknowledgement() {
     } catch (err) {
       console.error('Error marking task complete:', err);
       setError('Failed to mark task as complete. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleUpdateTaskProgress = async (progress) => {
+    try {
+      setSubmitting(true);
+      setError('');
+      setSuccessMessage('');
+
+      const apiBaseURL = (typeof window !== 'undefined') && (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
+        ? 'https://tasktracker-4xm2.onrender.com/api'
+        : (import.meta.env.VITE_API_URL || 'http://localhost:5000/api');
+
+      const response = await fetch(`${apiBaseURL}/tasks/acknowledge/${token}/progress`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ progress }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.message || 'Failed to update progress');
+        return;
+      }
+
+      setTaskProgress(progress);
+      const progressText = progress === 'in-progress' ? 'In Progress' : progress === '50-percent' ? '50% Complete' : 'Completed';
+      setSuccessMessage(`✅ Task marked as ${progressText}!`);
+    } catch (err) {
+      console.error('Error updating task progress:', err);
+      setError('Failed to update progress. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -458,7 +494,55 @@ function TaskAcknowledgement() {
               </div>
             </div>
 
-            {/* Extension Request Form */}
+            {/* Task Progress Section */}
+            <div className="mb-8 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-300">
+              <h3 className="text-2xl font-bold text-gray-800 mb-4 text-center">📊 Update Task Progress</h3>
+              <p className="text-center text-gray-600 mb-4">Let us know how you're progressing on this task</p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <button
+                  onClick={() => handleUpdateTaskProgress('in-progress')}
+                  disabled={submitting}
+                  className={`px-4 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${
+                    taskProgress === 'in-progress'
+                      ? 'bg-blue-600 text-white shadow-lg scale-105'
+                      : 'bg-white text-blue-600 border-2 border-blue-300 hover:bg-blue-50'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  🚀 In Progress
+                </button>
+                <button
+                  onClick={() => handleUpdateTaskProgress('50-percent')}
+                  disabled={submitting}
+                  className={`px-4 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${
+                    taskProgress === '50-percent'
+                      ? 'bg-yellow-600 text-white shadow-lg scale-105'
+                      : 'bg-white text-yellow-600 border-2 border-yellow-300 hover:bg-yellow-50'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  ⏳ 50% Complete
+                </button>
+                <button
+                  onClick={() => handleUpdateTaskProgress('completed')}
+                  disabled={submitting}
+                  className={`px-4 py-3 rounded-lg font-bold transition-all flex items-center justify-center gap-2 ${
+                    taskProgress === 'completed'
+                      ? 'bg-green-600 text-white shadow-lg scale-105'
+                      : 'bg-white text-green-600 border-2 border-green-300 hover:bg-green-50'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  ✅ Completed
+                </button>
+              </div>
+              {taskProgress && (
+                <p className="text-center text-sm text-gray-600 mt-3">
+                  ✓ Progress updated! Admin can see this status.
+                </p>
+              )}
+            </div>
+
+            {/* Action Choice Section */}
+            <div className="mb-8">
+              <h3 className="text-2xl font-bold text-gray-800 mb-4 text-center">What would you like to do?</h3>
             {selectedAction === 'extension' && (
               <div className="bg-gradient-to-br from-orange-50 to-yellow-50 p-6 rounded-lg border-2 border-orange-200 mb-6">
                 <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
