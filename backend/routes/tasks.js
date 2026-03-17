@@ -285,8 +285,7 @@ router.post('/:taskId/acknowledge-link', adminAuth, async (req, res) => {
     res.json({ 
       message: 'Acknowledgement link generated successfully',
       acknowledgementUrl,
-      token,
-      expiryDate
+      token
     });
   } catch (error) {
     res.status(500).json({ message: 'Error generating acknowledgement link', error: error.message });
