@@ -410,14 +410,18 @@ router.get('/extension-requests/all', adminAuth, async (req, res) => {
 // Approve extension request (admin only) - MUST be BEFORE /:taskId/extension-request/:token
 router.post('/extension-requests/:taskId/approve', adminAuth, async (req, res) => {
   try {
+    console.log('🔵 APPROVE ROUTE HIT - taskId:', req.params.taskId, 'requestIndex:', req.body.requestIndex);
+    
     const { requestIndex } = req.body;
     const task = await Task.findById(req.params.taskId);
 
     if (!task) {
+      console.log('❌ Task not found:', req.params.taskId);
       return res.status(404).json({ message: 'Task not found' });
     }
 
     if (!task.extensionRequests[requestIndex]) {
+      console.log('❌ Extension request not found at index:', requestIndex);
       return res.status(404).json({ message: 'Extension request not found' });
     }
 
