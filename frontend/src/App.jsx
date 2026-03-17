@@ -6,7 +6,7 @@ import Tasks from './components/Tasks';
 import Contacts from './components/Contacts';
 import Settings from './components/Settings';
 import TaskHistory from './components/TaskHistory';
-import ExtensionNotifications from './components/ExtensionNotifications';
+import Notifications from './components/Notifications';
 import TaskAcknowledgement from './components/TaskAcknowledgement';
 
 function App() {
@@ -150,7 +150,7 @@ function App() {
 
           {/* Extension Requests in Sidenav */}
           <li className="px-4 py-2 overflow-y-auto max-h-64 mb-4">
-            <ExtensionNotifications />
+            <Notifications />
           </li>
 
           {/* Secondary Divider */}
