@@ -292,27 +292,38 @@ function TaskAcknowledgement() {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8 pt-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">Task Request Extension</h1>
-          <p className="text-gray-600">Need more time? Let us know with a message below</p>
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">Task Update Portal</h1>
+          <p className="text-gray-600">Mark your task as complete or request more time in one place</p>
         </div>
 
-        {/* QUICK ACTION: Mark as Complete Button - AT THE TOP */}
-        <div className="mb-8 p-6 bg-gradient-to-r from-emerald-600 to-green-600 rounded-xl shadow-lg border border-emerald-500">
-          <h3 className="text-2xl font-bold text-white mb-3 text-center">Task Completion</h3>
-          <p className="text-center text-emerald-50 mb-4">If this task is finished, mark it complete now.</p>
-          <button
-            onClick={handleMarkComplete}
-            disabled={submitting || isCompleted}
-            className={`w-full px-6 py-4 rounded-lg font-bold text-lg transition-all flex items-center justify-center gap-2 ${
-              isCompleted
-                ? 'bg-gray-400 text-white cursor-not-allowed'
-                : 'bg-white text-emerald-700 hover:bg-emerald-50 shadow-md hover:shadow-lg'
-            } disabled:opacity-60 disabled:cursor-not-allowed`}
-          >
-            {submitting ? '⏳ Marking...' : '✅ Mark Task as Complete'}
-          </button>
-          {isCompleted && (
-            <p className="text-center text-emerald-50 font-semibold mt-3">This task is already marked as completed.</p>
+        {/* Primary Action Panel */}
+        <div className={`mb-8 p-6 rounded-xl shadow-lg border ${isCompleted ? 'bg-green-600 border-green-500' : 'bg-gradient-to-r from-emerald-600 to-green-600 border-emerald-500'}`}>
+          <h3 className="text-2xl font-bold text-white mb-3 text-center">
+            {isCompleted ? 'Task Completed' : 'Quick Actions'}
+          </h3>
+          <p className="text-center text-emerald-50 mb-4">
+            {isCompleted ? 'Thanks! This task has already been completed.' : 'Choose what you want to do for this task'}
+          </p>
+
+          {!isCompleted ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <button
+                onClick={handleMarkComplete}
+                disabled={submitting}
+                className="w-full px-6 py-4 rounded-lg font-bold text-lg bg-white text-emerald-700 hover:bg-emerald-50 shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {submitting ? '⏳ Marking...' : '✅ Mark Task as Complete'}
+              </button>
+              <button
+                onClick={() => setSelectedAction('extension')}
+                disabled={submitting}
+                className="w-full px-6 py-4 rounded-lg font-bold text-lg bg-emerald-800 text-white hover:bg-emerald-900 shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                📨 Request Extension
+              </button>
+            </div>
+          ) : (
+            <p className="text-center text-white font-semibold">✅ This task is already marked as completed.</p>
           )}
         </div>
 
@@ -323,45 +334,6 @@ function TaskAcknowledgement() {
             <p className="text-white font-semibold text-lg">
               Status: {task.status}
             </p>
-            {!isCompleted && (
-              <button
-                onClick={handleMarkComplete}
-                disabled={submitting}
-                style={{
-                  marginTop: '12px',
-                  width: '100%',
-                  padding: '10px 14px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: '#ffffff',
-                  color: '#2563eb',
-                  fontWeight: 700,
-                  fontSize: '16px',
-                  cursor: submitting ? 'not-allowed' : 'pointer',
-                  opacity: submitting ? 0.7 : 1
-                }}
-              >
-                {submitting ? 'Marking...' : 'Mark Task as Complete'}
-              </button>
-            )}
-          </div>
-
-          {/* Always-visible action bar inside task card */}
-          <div className={`mx-6 mt-4 p-4 rounded-lg border ${isCompleted ? 'border-green-300 bg-green-50' : 'border-blue-300 bg-blue-50'}`}>
-            <p className={`text-center font-bold mb-3 ${isCompleted ? 'text-green-700' : 'text-blue-700'}`}>
-              {isCompleted ? '✅ This task is completed' : '⏳ This task is pending. You can mark it as complete below.'}
-            </p>
-            <button
-              onClick={handleMarkComplete}
-              disabled={submitting || isCompleted}
-              className={`w-full px-6 py-3 rounded-lg font-bold transition-all ${
-                isCompleted
-                  ? 'bg-gray-400 text-white cursor-not-allowed'
-                  : 'bg-green-600 text-white hover:bg-green-700 shadow-md'
-              } disabled:opacity-60 disabled:cursor-not-allowed`}
-            >
-              {submitting ? '⏳ Marking...' : isCompleted ? '✅ Already Completed' : '✅ Mark This Task Complete'}
-            </button>
           </div>
 
           {isCompleted && (
@@ -572,31 +544,6 @@ function TaskAcknowledgement() {
                 )}
               </>
             )}
-
-            {/* PROMINENT: Mark as Complete Button - Inside Task Card */}
-            <div className="mb-8 p-6 bg-emerald-50 rounded-xl border-2 border-emerald-400 shadow-md">
-              <h3 className="text-center text-emerald-800 font-bold text-lg mb-4">Task Completed?</h3>
-              <button
-                onClick={handleMarkComplete}
-                disabled={submitting || isCompleted}
-                className={`w-full px-6 py-4 rounded-lg font-bold text-xl transition-all flex items-center justify-center gap-3 ${
-                  isCompleted
-                    ? 'bg-gray-500 text-white cursor-not-allowed'
-                    : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg hover:shadow-xl'
-                } disabled:opacity-60 disabled:cursor-not-allowed`}
-              >
-                {submitting ? (
-                  <>⏳ Marking as Complete...</>
-                ) : (
-                  <>
-                    🎉 Mark This Task as Complete
-                  </>
-                )}
-              </button>
-              {isCompleted && (
-                <p className="text-center text-emerald-800 font-bold mt-3">Task already completed.</p>
-              )}
-            </div>
 
             {/* Action Choice Section */}
             <div className="mb-8">
