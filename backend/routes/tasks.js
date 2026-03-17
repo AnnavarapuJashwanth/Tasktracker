@@ -369,43 +369,7 @@ router.post('/acknowledge/:token/complete', async (req, res) => {
 
 // ============ END ACKNOWLEDGEMENT ROUTES ============
 
-// Get single task (must be AFTER all specific routes)
-router.get('/:id', adminAuth, async (req, res) => {
-  try {
-    const task = await Task.findById(req.params.id);
-
-    if (!task) {
-      return res.status(404).json({ message: 'Task not found' });
-    }
-
-    res.json(task);
-  } catch (error) {
-    res.status(500).json({ message: 'Error fetching task', error: error.message });
-  }
-});
-
-router.use((err, req, res, next) => {
-  if (err) {
-    console.error('Route error:', err.message);
-    
-    // Handle multer errors
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      return res.status(400).json({ message: 'File too large. Maximum size is 10MB' });
-    }
-    if (err.code === 'LIMIT_FILE_COUNT') {
-      return res.status(400).json({ message: 'Too many files' });
-    }
-    if (err.message && err.message.includes('MIME')) {
-      return res.status(400).json({ message: 'Only image files are allowed' });
-    }
-    
-    // Generic error
-    return res.status(500).json({ message: 'Internal server error', error: err.message });
-  }
-  next();
-});
-
-// ===== EXTENSION REQUEST ENDPOINTS =====
+// ===== EXTENSION REQUEST ENDPOINTS (MUST BE BEFORE GENERIC :id ROUTE) =====
 
 // Submit extension request (from acknowledgement page)
 router.post('/:taskId/extension-request/:token', async (req, res) => {
@@ -501,6 +465,7 @@ router.post('/extension-requests/:taskId/approve', adminAuth, async (req, res) =
     task.dueDate = task.extensionRequests[requestIndex].requestedDeadlineExtension;
     await task.save();
 
+    console.log('✅ Extension approved for task:', req.params.taskId);
     res.json({ message: 'Extension approved', task });
   } catch (error) {
     console.error('Error approving extension:', error);
@@ -525,11 +490,50 @@ router.post('/extension-requests/:taskId/reject', adminAuth, async (req, res) =>
     task.extensionRequests[requestIndex].status = 'rejected';
     await task.save();
 
+    console.log('✅ Extension rejected for task:', req.params.taskId);
     res.json({ message: 'Extension rejected', task });
   } catch (error) {
     console.error('Error rejecting extension:', error);
     res.status(500).json({ message: 'Error rejecting extension', error: error.message });
   }
+});
+
+// ============ GENERIC ROUTES (MUST BE LAST) ============
+
+// Get single task (MUST be AFTER all specific routes)
+router.get('/:id', adminAuth, async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.id);
+
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    res.json(task);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching task', error: error.message });
+  }
+});
+
+router.use((err, req, res, next) => {
+  if (err) {
+    console.error('Route error:', err.message);
+    
+    // Handle multer errors
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ message: 'File too large. Maximum size is 10MB' });
+    }
+    if (err.code === 'LIMIT_FILE_COUNT') {
+      return res.status(400).json({ message: 'Too many files' });
+    }
+    if (err.message && err.message.includes('MIME')) {
+      return res.status(400).json({ message: 'Only image files are allowed' });
+    }
+    
+    // Generic error
+    return res.status(500).json({ message: 'Internal server error', error: err.message });
+  }
+  next();
 });
 
 export default router;
