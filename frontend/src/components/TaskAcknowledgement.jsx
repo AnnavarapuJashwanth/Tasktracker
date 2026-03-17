@@ -323,6 +323,27 @@ function TaskAcknowledgement() {
             <p className="text-white font-semibold text-lg">
               Status: {task.status}
             </p>
+            {!isCompleted && (
+              <button
+                onClick={handleMarkComplete}
+                disabled={submitting}
+                style={{
+                  marginTop: '12px',
+                  width: '100%',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: '#ffffff',
+                  color: '#2563eb',
+                  fontWeight: 700,
+                  fontSize: '16px',
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                  opacity: submitting ? 0.7 : 1
+                }}
+              >
+                {submitting ? 'Marking...' : 'Mark Task as Complete'}
+              </button>
+            )}
           </div>
 
           {/* Always-visible action bar inside task card */}
