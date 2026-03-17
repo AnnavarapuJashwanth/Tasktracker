@@ -4,7 +4,6 @@ import { tasksAPI, whatsappAPI } from '../api';
 import TaskForm from './TaskForm';
 import TaskCard from './TaskCard';
 import SessionTimer from './SessionTimer';
-import ExtensionNotifications from './ExtensionNotifications';
 
 function Tasks({ adminPin }) {
   const [tasks, setTasks] = useState([]);
@@ -479,11 +478,6 @@ ${photoUrl}`;
           }}
         />
       )}
-
-      {/* Extension Notifications Sidenav */}
-      <div className="mb-8">
-        <ExtensionNotifications />
-      </div>
 
       {/* Filters */}
       <div className="flex gap-4 mb-6">
