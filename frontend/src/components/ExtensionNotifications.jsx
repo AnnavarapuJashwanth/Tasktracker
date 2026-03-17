@@ -214,13 +214,13 @@ function ExtensionNotifications() {
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4">
                 <button
-                  onClick={() => handleApprove(selectedTask._id, 0)}
+                  onClick={() => handleApprove(selectedTask.taskId || selectedTask._id, selectedTask.requestIndex)}
                   className="flex-1 px-4 py-3 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
                 >
                   <FaCheck /> Approve Extension
                 </button>
                 <button
-                  onClick={() => handleReject(selectedTask._id, 0)}
+                  onClick={() => handleReject(selectedTask.taskId || selectedTask._id, selectedTask.requestIndex)}
                   className="flex-1 px-4 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-lg flex items-center justify-center gap-2 transition-colors"
                 >
                   <FaTimes /> Reject Request

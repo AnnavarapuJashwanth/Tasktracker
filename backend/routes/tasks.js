@@ -381,10 +381,12 @@ router.get('/extension-requests/all', adminAuth, async (req, res) => {
     const allRequests = [];
     tasks.forEach((task) => {
       if (task.extensionRequests && task.extensionRequests.length > 0) {
-        task.extensionRequests.forEach((request) => {
+        task.extensionRequests.forEach((request, index) => {
           if (request.status === 'pending') {
             allRequests.push({
-              _id: task._id,
+              taskId: task._id,  // Keep task ID separate - IMPORTANT!
+              _id: task._id,  // Also keep as _id for compatibility
+              requestIndex: index,  // Index of this request in extensionRequests array
               taskTitle: task.title,
               taskDescription: task.description,
               assignedToContact: task.assignedToContact,
@@ -393,7 +395,12 @@ router.get('/extension-requests/all', adminAuth, async (req, res) => {
               priority: task.priority,
               category: task.category,
               sector: task.sector,
-              ...request.toObject(),
+              message: request.message,
+              requestedBy: request.requestedBy,
+              requestedPhone: request.requestedPhone,
+              requestedDeadlineExtension: request.requestedDeadlineExtension,
+              status: request.status,
+              requestedAt: request.requestedAt,
             });
           }
         });
