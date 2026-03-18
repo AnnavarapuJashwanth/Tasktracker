@@ -7,6 +7,7 @@ function TaskHistory() {
   const [error, setError] = useState('');
   const [selectedTask, setSelectedTask] = useState(null);
   const [filter, setFilter] = useState('all'); // all, pending, approved, rejected
+  const [contactsMap, setContactsMap] = useState(new Map());
 
   // Get the correct API URL based on environment
   const getAPIBaseURL = () => {
@@ -23,14 +24,48 @@ function TaskHistory() {
 
   useEffect(() => {
     fetchTaskHistory();
-    
-    // Auto-refresh task history every 5 seconds to show real-time updates
-    const refreshInterval = setInterval(() => {
-      fetchTaskHistory();
-    }, 5000);
-    
-    return () => clearInterval(refreshInterval);
+    // Load once on mount only - no auto-refresh to prevent excessive reloading
   }, []);
+
+  // Fetch contacts on component mount
+  useEffect(() => {
+    loadContactsMap();
+  }, []);
+
+  const loadContactsMap = async () => {
+    try {
+      const response = await fetch(getAPIBaseURL() + '/contacts/all', {
+        headers: {
+          'adminPin': localStorage.getItem('adminPin') || '1234',
+          'Content-Type': 'application/json',
+        },
+      });
+      if (response.ok) {
+        const contacts = await response.json();
+        const map = new Map();
+        contacts.forEach(contact => {
+          map.set(contact.name, contact.phone);
+          map.set(contact.name.toLowerCase(), contact.phone);
+        });
+        setContactsMap(map);
+      }
+    } catch (err) {
+      console.warn('Could not fetch contacts map:', err);
+    }
+  };
+
+  const getContactPhone = (assignedToName) => {
+    if (!assignedToName) return 'N/A';
+    // Try to get from map
+    const phone = contactsMap.get(assignedToName) || contactsMap.get(assignedToName.toLowerCase());
+    if (phone) return phone;
+    // Try to extract from assignedToName (might be in format "Name (+91...)") 
+    const phoneMatch = assignedToName.match(/\(\+[\d\s\-]+\)/);
+    if (phoneMatch) {
+      return phoneMatch[0].replace(/[^\d+]/g, '');
+    }
+    return 'N/A';
+  };
 
   const fetchTaskHistory = async () => {
     try {
@@ -56,6 +91,10 @@ function TaskHistory() {
       setError('Failed to connect to server');
       setLoading(false);
     }
+  };
+
+  const handleRefreshTasks = () => {
+    fetchTaskHistory();
   };
 
   const getStatusBadge = (status) => {
@@ -184,7 +223,7 @@ function TaskHistory() {
                           <div className="bg-gray-50 p-3 rounded">
                             <p className="text-xs text-gray-600 uppercase tracking-wide font-semibold">Contact</p>
                             <p className="text-sm font-bold text-gray-800 flex items-center gap-1 mt-1">
-                              <FaPhone size={12} /> {task.assignedToPhone || 'N/A'}
+                              <FaPhone size={12} /> {getContactPhone(task.assignedToContact)}
                             </p>
                           </div>
                           <div className="bg-gray-50 p-3 rounded">

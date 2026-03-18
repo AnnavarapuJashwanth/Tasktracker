@@ -69,7 +69,10 @@ function TaskCard({ task, onStart, onComplete, onDelete, onCitizen, onAssign, on
   };
 
   return (
-    <div className={`rounded-lg shadow-lg overflow-hidden transition-transform hover:shadow-xl hover:scale-105 ${getStatusColor(task.status)}`}>
+    <div
+      onClick={() => onEdit && onEdit(task)}
+      className={`rounded-lg shadow-lg overflow-hidden transition-transform hover:shadow-xl hover:scale-105 cursor-pointer ${getStatusColor(task.status)}`}
+      title="Click to edit task">
       {/* Card Header */}
       <div className="p-6 bg-white border-b-2">
         {/* Title & Status Row */}

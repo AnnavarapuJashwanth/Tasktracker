@@ -138,6 +138,22 @@ function Dashboard({ adminPin, onNavigateToTasks }) {
     }
   };
 
+  const handleStatsCardClick = (filterType) => {
+    // Navigate to Tasks component with the appropriate filter
+    if (onNavigateToTasks) {
+      // For 'all', pass all filters as default (all sectors, all statuses)
+      const statusToPass = filterType === 'all' ? 'all' : filterType;
+      onNavigateToTasks(null, statusToPass, 'all');
+    }
+  };
+
+  const handleTodayTaskClick = (task) => {
+    // Navigate to Tasks with sector and status filters for this task
+    if (onNavigateToTasks) {
+      onNavigateToTasks(null, task.status, task.sector);
+    }
+  };
+
   if (loading) {
     return (
       <div className="animate-fadeIn flex items-center justify-center h-96">
@@ -168,7 +184,16 @@ function Dashboard({ adminPin, onNavigateToTasks }) {
         
         {/* Left Column - Main Large Card (spans 2.5 columns) */}
         <div className="col-span-2 row-span-3">
-          <div className="rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all border-t-4 h-full flex flex-col justify-between"
+          <div 
+            onClick={() => {
+              if (mainCard === 'total') {
+                // When Total is selected, navigate to Tasks
+                onNavigateToTasks(null, 'all', 'all');
+              } else {
+                setMainCard('total');
+              }
+            }}
+            className="rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all border-t-4 h-full flex flex-col justify-between cursor-pointer"
             style={{
               background: mainCard === 'total' ? 'linear-gradient(to right, #dbeafe, #dbeafe)' : 
                          mainCard === 'pending' ? 'linear-gradient(to right, #fef3c7, #fef3c7)' :
@@ -224,7 +249,7 @@ function Dashboard({ adminPin, onNavigateToTasks }) {
                             '#22c55e'
               }}>
               <p className="text-xs font-semibold text-gray-800">
-                📊 Click a card on the right to view
+                {mainCard === 'total' ? '✓ Click to view all tasks' : '📊 Click a card on the right to view'}
               </p>
             </div>
           </div>
@@ -232,10 +257,13 @@ function Dashboard({ adminPin, onNavigateToTasks }) {
 
         {/* Right Column - 3 Vertical Cards */}
         
-        {/* Pending Card */}
+        {/* Pending Card - Only show when not selected */}
         {mainCard !== 'pending' && (
           <div 
-            onClick={() => setMainCard('pending')}
+            onClick={() => {
+              setMainCard('pending');
+              handleStatsCardClick('Pending');
+            }}
             className="col-span-2 rounded-2xl p-5 shadow-md hover:shadow-lg transition-all border-l-4 border-amber-500 cursor-pointer transform hover:scale-105 active:scale-95"
             style={{
               background: 'linear-gradient(to right, #fef3c7, #fef3c7)'
@@ -251,10 +279,13 @@ function Dashboard({ adminPin, onNavigateToTasks }) {
           </div>
         )}
 
-        {/* In Progress Card */}
+        {/* In Progress Card - Only show when not selected */}
         {mainCard !== 'inProgress' && (
           <div 
-            onClick={() => setMainCard('inProgress')}
+            onClick={() => {
+              setMainCard('inProgress');
+              handleStatsCardClick('In Progress');
+            }}
             className="col-span-2 rounded-2xl p-5 shadow-md hover:shadow-lg transition-all border-l-4 border-purple-500 cursor-pointer transform hover:scale-105 active:scale-95"
             style={{
               background: 'linear-gradient(to right, #ede9fe, #f3e8ff)'
@@ -270,10 +301,13 @@ function Dashboard({ adminPin, onNavigateToTasks }) {
           </div>
         )}
 
-        {/* Completed Card */}
+        {/* Completed Card - Only show when not selected */}
         {mainCard !== 'completed' && (
           <div 
-            onClick={() => setMainCard('completed')}
+            onClick={() => {
+              setMainCard('completed');
+              handleStatsCardClick('Completed');
+            }}
             className="col-span-2 rounded-2xl p-5 shadow-md hover:shadow-lg transition-all border-l-4 border-green-500 cursor-pointer transform hover:scale-105 active:scale-95"
             style={{
               background: 'linear-gradient(to right, #dcfce7, #f0fdf4)'
@@ -289,7 +323,7 @@ function Dashboard({ adminPin, onNavigateToTasks }) {
           </div>
         )}
 
-        {/* Total Card */}
+        {/* Total Card - Only show when not selected as main card */}
         {mainCard !== 'total' && (
           <div 
             onClick={() => setMainCard('total')}
@@ -301,13 +335,12 @@ function Dashboard({ adminPin, onNavigateToTasks }) {
               <div className="bg-blue-600 p-3 rounded-lg shadow-lg">
                 <FaClipboard className="text-white text-xl" />
               </div>
-              <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-0.5 rounded-full">+12%</span>
+              <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded-full">+12%</span>
             </div>
-            <h3 className="text-gray-600 text-xs font-semibold uppercase tracking-wide mb-1">Total</h3>
+            <h3 className="text-gray-600 text-xs font-semibold uppercase tracking-wide mb-1">Total Tasks</h3>
             <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
           </div>
         )}
-
       </div>
 
       {/* Main Content Grid */}
@@ -439,13 +472,15 @@ function Dashboard({ adminPin, onNavigateToTasks }) {
             {todayTasks.map((task) => (
               <div
                 key={task._id}
-                className={`bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition-all border-l-4 ${
+                onClick={() => handleTodayTaskClick(task)}
+                className={`bg-white rounded-xl p-5 shadow-md hover:shadow-lg transition-all border-l-4 cursor-pointer ${
                   task.status === 'Completed'
                     ? 'border-l-green-500 bg-green-50'
                     : task.status === 'In Progress'
                     ? 'border-l-blue-500 bg-blue-50'
                     : 'border-l-amber-500 bg-amber-50'
                 }`}
+                title="Click to view and filter by this task's sector and status"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">

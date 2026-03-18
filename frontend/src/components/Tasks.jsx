@@ -5,14 +5,14 @@ import TaskForm from './TaskForm';
 import TaskCard from './TaskCard';
 import SessionTimer from './SessionTimer';
 
-function Tasks({ adminPin, selectedAssignee }) {
+function Tasks({ adminPin, selectedAssignee, selectedStatus, selectedSector: selectedSectorProp }) {
   const [tasks, setTasks] = useState([]);
   const [filteredTasks, setFilteredTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
-  const [selectedSector, setSelectedSector] = useState('all');
-  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedSectorLocal, setSelectedSectorLocal] = useState(selectedSectorProp || 'all');
+  const [selectedStatusLocal, setSelectedStatusLocal] = useState(selectedStatus || 'all');
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [showMessageModal, setShowMessageModal] = useState(false);
@@ -26,29 +26,37 @@ function Tasks({ adminPin, selectedAssignee }) {
   const [acknowledgementLink, setAcknowledgementLink] = useState('');
   const [generatingLink, setGeneratingLink] = useState(false);
 
+  // Sync selectedStatusLocal with selectedStatus prop
+  useEffect(() => {
+    if (selectedStatus) {
+      setSelectedStatusLocal(selectedStatus);
+    }
+  }, [selectedStatus]);
+
+  // Sync selectedSectorLocal with selectedSectorProp
+  useEffect(() => {
+    if (selectedSectorProp) {
+      setSelectedSectorLocal(selectedSectorProp);
+    }
+  }, [selectedSectorProp]);
+
   useEffect(() => {
     loadTasks();
-    
-    // Auto-refresh tasks every 5 seconds to show real-time updates
-    const refreshInterval = setInterval(() => {
-      loadTasks();
-    }, 5000);
-    
-    return () => clearInterval(refreshInterval);
-  }, [adminPin, selectedSector]);
+    // Load tasks only when dependencies change - no auto-refresh to prevent excessive reloading
+  }, [adminPin, selectedSectorLocal]);
 
   useEffect(() => {
     filterTasks();
-  }, [tasks, selectedStatus, selectedAssignee]);
+  }, [tasks, selectedStatusLocal, selectedAssignee]);
 
   const loadTasks = async () => {
     setLoading(true);
     try {
       let response;
-      if (selectedSector === 'all') {
+      if (selectedSectorLocal === 'all') {
         response = await tasksAPI.getAllTasks();
       } else {
-        response = await tasksAPI.getTasksBySector(selectedSector);
+        response = await tasksAPI.getTasksBySector(selectedSectorLocal);
       }
       setTasks(response.data);
       setError('');
@@ -72,8 +80,8 @@ function Tasks({ adminPin, selectedAssignee }) {
     }
     
     // Filter by status
-    if (selectedStatus !== 'all') {
-      filtered = filtered.filter((task) => task.status === selectedStatus);
+    if (selectedStatusLocal !== 'all') {
+      filtered = filtered.filter((task) => task.status === selectedStatusLocal);
     }
     
     setFilteredTasks(filtered);
@@ -507,8 +515,8 @@ ${photoUrl}`;
       {/* Filters */}
       <div className="flex gap-4 mb-6">
         <select
-          value={selectedSector}
-          onChange={(e) => setSelectedSector(e.target.value)}
+          value={selectedSectorLocal}
+          onChange={(e) => setSelectedSectorLocal(e.target.value)}
           className="form-select"
         >
           <option value="all">All Sectors</option>
@@ -517,8 +525,8 @@ ${photoUrl}`;
         </select>
 
         <select
-          value={selectedStatus}
-          onChange={(e) => setSelectedStatus(e.target.value)}
+          value={selectedStatusLocal}
+          onChange={(e) => setSelectedStatusLocal(e.target.value)}
           className="form-select"
         >
           <option value="all">All Status</option>

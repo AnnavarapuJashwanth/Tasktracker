@@ -15,6 +15,8 @@ function App() {
   const [adminPin, setAdminPin] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedAssignee, setSelectedAssignee] = useState(null); // New state for assignee filtering
+  const [selectedStatus, setSelectedStatus] = useState('all'); // New state for status filtering
+  const [selectedSector, setSelectedSector] = useState('all'); // New state for sector filtering
 
   // Check if we're on acknowledgement page
   const isAcknowledgementPage = window.location.pathname.startsWith('/acknowledge/');
@@ -75,14 +77,18 @@ function App() {
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setSidebarOpen(false); // Close sidebar on mobile when tab is clicked
-    // Reset assignee filter when navigating away from tasks
+    // Reset filters when navigating away from tasks
     if (tab !== 'tasks') {
       setSelectedAssignee(null);
+      setSelectedStatus('all');
+      setSelectedSector('all');
     }
   };
 
-  const handleNavigateToTasksByAssignee = (assigneeName) => {
+  const handleNavigateToTasksByAssignee = (assigneeName, statusFilter = 'all', sectorFilter = 'all') => {
     setSelectedAssignee(assigneeName);
+    setSelectedStatus(statusFilter);
+    setSelectedSector(sectorFilter);
     setActiveTab('tasks');
     setSidebarOpen(false); // Close sidebar on mobile
   };
@@ -223,7 +229,7 @@ function App() {
       {/* Main Content - Responsive */}
       <main className="lg:ml-72 flex-1 p-4 lg:p-8 overflow-y-auto w-full pt-16 lg:pt-0">
         {activeTab === 'dashboard' && <Dashboard adminPin={adminPin} onNavigateToTasks={handleNavigateToTasksByAssignee} />}
-        {activeTab === 'tasks' && <Tasks adminPin={adminPin} selectedAssignee={selectedAssignee} />}
+        {activeTab === 'tasks' && <Tasks adminPin={adminPin} selectedAssignee={selectedAssignee} selectedStatus={selectedStatus} selectedSector={selectedSector} />}
         {activeTab === 'contacts' && <Contacts />}
         {activeTab === 'notifications' && <Notifications />}
         {activeTab === 'history' && <TaskHistory />}
