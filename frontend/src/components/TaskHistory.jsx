@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FaHistory, FaPhone, FaCheckCircle, FaTimesCircle, FaClock, FaUser, FaClipboard } from 'react-icons/fa';
 
-function TaskHistory() {
+function TaskHistory({ onTaskClick }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -203,7 +203,13 @@ function TaskHistory() {
               return (
                 <div 
                   key={task._id}
-                  onClick={() => setSelectedTask(selectedTask?._id === task._id ? null : task)}
+                  onClick={() => {
+                    if (onTaskClick) {
+                      onTaskClick(task._id);
+                    } else {
+                      setSelectedTask(selectedTask?._id === task._id ? null : task);
+                    }
+                  }}
                   className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all cursor-pointer border-l-4 border-blue-500 overflow-hidden"
                 >
                   {/* Task Header */}

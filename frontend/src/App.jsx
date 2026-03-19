@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FaHome, FaTasks, FaPhone, FaCog, FaSignOutAlt, FaHistory, FaBell } from 'react-icons/fa';
+import { FaHome, FaTasks, FaPhone, FaCog, FaSignOutAlt, FaHistory, FaBell, FaFileAlt } from 'react-icons/fa';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import Tasks from './components/Tasks';
 import Contacts from './components/Contacts';
 import Settings from './components/Settings';
 import TaskHistory from './components/TaskHistory';
+import TaskDetails from './components/TaskDetails';
 import Notifications from './components/Notifications';
 import TaskAcknowledgement from './components/TaskAcknowledgement';
 
@@ -17,6 +18,7 @@ function App() {
   const [selectedAssignee, setSelectedAssignee] = useState(null); // New state for assignee filtering
   const [selectedStatus, setSelectedStatus] = useState('all'); // New state for status filtering
   const [selectedSector, setSelectedSector] = useState('all'); // New state for sector filtering
+  const [selectedTaskId, setSelectedTaskId] = useState(null); // State for task details page
 
   // Check if we're on acknowledgement page
   const isAcknowledgementPage = window.location.pathname.startsWith('/acknowledge/');
@@ -91,6 +93,17 @@ function App() {
     setSelectedSector(sectorFilter);
     setActiveTab('tasks');
     setSidebarOpen(false); // Close sidebar on mobile
+  };
+
+  const handleOpenTaskDetails = (taskId) => {
+    setSelectedTaskId(taskId);
+    setActiveTab('task-details');
+    setSidebarOpen(false); // Close sidebar on mobile
+  };
+
+  const handleBackToHistory = () => {
+    setSelectedTaskId(null);
+    setActiveTab('history');
   };
 
   // Show acknowledgement page if URL matches the pattern
@@ -183,6 +196,19 @@ function App() {
           <li>
             <button
               className={`w-full px-6 py-3 text-left flex items-center gap-4 rounded-lg transition-all duration-200 font-medium ${
+                activeTab === 'task-details'
+                  ? 'bg-gradient-to-r from-indigo-600 to-blue-600 shadow-lg border-l-4 border-indigo-300'
+                  : 'hover:bg-slate-700 border-l-4 border-transparent hover:border-indigo-500'
+              }`}
+              onClick={() => handleTabChange('task-details')}
+              style={{ display: activeTab === 'task-details' ? 'flex' : 'none' }}
+            >
+              <FaFileAlt className="text-lg" /> Task Details
+            </button>
+          </li>
+          <li>
+            <button
+              className={`w-full px-6 py-3 text-left flex items-center gap-4 rounded-lg transition-all duration-200 font-medium ${
                 activeTab === 'notifications'
                   ? 'bg-gradient-to-r from-indigo-600 to-blue-600 shadow-lg border-l-4 border-indigo-300'
                   : 'hover:bg-slate-700 border-l-4 border-transparent hover:border-indigo-500'
@@ -232,7 +258,8 @@ function App() {
         {activeTab === 'tasks' && <Tasks adminPin={adminPin} selectedAssignee={selectedAssignee} selectedStatus={selectedStatus} selectedSector={selectedSector} />}
         {activeTab === 'contacts' && <Contacts />}
         {activeTab === 'notifications' && <Notifications />}
-        {activeTab === 'history' && <TaskHistory />}
+        {activeTab === 'history' && <TaskHistory onTaskClick={handleOpenTaskDetails} />}
+        {activeTab === 'task-details' && selectedTaskId && <TaskDetails taskId={selectedTaskId} onBack={handleBackToHistory} />}
         {activeTab === 'settings' && <Settings />}
       </main>
     </div>
