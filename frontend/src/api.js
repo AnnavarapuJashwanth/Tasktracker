@@ -23,6 +23,35 @@ console.log('Environment:', window.location.hostname !== 'localhost' && window.l
 console.log('API Base URL:', API_BASE_URL);
 console.log('Hostname:', window.location.hostname);
 
+// Create axios instance with optimized config
+const axiosInstance = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 30000, // 30 seconds timeout
+});
+
+// Add retry logic
+axiosInstance.interceptors.response.use(
+  response => response,
+  async error => {
+    const config = error.config;
+    
+    if (!config || !config.retry) {
+      config.retry = 0;
+    }
+    
+    config.retry += 1;
+    
+    // Retry up to 2 times on network errors or 5xx errors
+    if (config.retry <= 2 && (error.message === 'Network Error' || (error.response && error.response.status >= 500))) {
+      // Wait before retrying (exponential backoff: 1s, 2s)
+      await new Promise(resolve => setTimeout(resolve, config.retry * 1000));
+      return axiosInstance(config);
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
 const getAuthHeader = () => {
   const pin = localStorage.getItem('adminPin');
   return {
@@ -33,61 +62,61 @@ const getAuthHeader = () => {
 };
 
 export const authAPI = {
-  login: (pin) => axios.post(`${API_BASE_URL}/auth/login`, { pin }),
+  login: (pin) => axiosInstance.post(`/auth/login`, { pin }),
 };
 
 export const tasksAPI = {
   createTask: (taskData) =>
-    axios.post(`${API_BASE_URL}/tasks/create`, taskData, getAuthHeader()),
+    axiosInstance.post(`/tasks/create`, taskData, getAuthHeader()),
   getAllTasks: () =>
-    axios.get(`${API_BASE_URL}/tasks/all`, getAuthHeader()),
+    axiosInstance.get(`/tasks/all`, getAuthHeader()),
   getTasksBySector: (sector) =>
-    axios.get(`${API_BASE_URL}/tasks/sector/${sector}`, getAuthHeader()),
+    axiosInstance.get(`/tasks/sector/${sector}`, getAuthHeader()),
   getStats: () =>
-    axios.get(`${API_BASE_URL}/tasks/stats`, getAuthHeader()),
+    axiosInstance.get(`/tasks/stats`, getAuthHeader()),
   updateTask: (taskId, taskData) =>
-    axios.put(`${API_BASE_URL}/tasks/update/${taskId}`, taskData, getAuthHeader()),
+    axiosInstance.put(`/tasks/update/${taskId}`, taskData, getAuthHeader()),
   updateTaskStatus: (taskId, statusData) =>
-    axios.put(`${API_BASE_URL}/tasks/update/${taskId}`, statusData, getAuthHeader()),
+    axiosInstance.put(`/tasks/update/${taskId}`, statusData, getAuthHeader()),
   assignTask: (taskId, assignmentData) =>
-    axios.put(`${API_BASE_URL}/tasks/assign/${taskId}`, assignmentData, getAuthHeader()),
+    axiosInstance.put(`/tasks/assign/${taskId}`, assignmentData, getAuthHeader()),
   deleteTask: (taskId) =>
-    axios.delete(`${API_BASE_URL}/tasks/delete/${taskId}`, getAuthHeader()),
+    axiosInstance.delete(`/tasks/delete/${taskId}`, getAuthHeader()),
   getTask: (taskId) =>
-    axios.get(`${API_BASE_URL}/tasks/${taskId}`, getAuthHeader()),
+    axiosInstance.get(`/tasks/${taskId}`, getAuthHeader()),
 };
 
 export const whatsappAPI = {
   sendAssignment: (taskId, recipientPhone) =>
-    axios.post(
-      `${API_BASE_URL}/whatsapp/send-assignment`,
+    axiosInstance.post(
+      `/whatsapp/send-assignment`,
       { taskId, recipientPhone },
       getAuthHeader()
     ),
   getStatus: () =>
-    axios.get(`${API_BASE_URL}/whatsapp/status`, getAuthHeader()),
+    axiosInstance.get(`/whatsapp/status`, getAuthHeader()),
 };
 
 export const contactsAPI = {
   getAllContacts: () =>
-    axios.get(`${API_BASE_URL}/contacts/all`, getAuthHeader()),
+    axiosInstance.get(`/contacts/all`, getAuthHeader()),
   getContact: (contactId) =>
-    axios.get(`${API_BASE_URL}/contacts/${contactId}`, getAuthHeader()),
+    axiosInstance.get(`/contacts/${contactId}`, getAuthHeader()),
   createContact: (contactData) =>
-    axios.post(`${API_BASE_URL}/contacts/create`, contactData, getAuthHeader()),
+    axiosInstance.post(`/contacts/create`, contactData, getAuthHeader()),
   updateContact: (contactId, contactData) =>
-    axios.put(`${API_BASE_URL}/contacts/update/${contactId}`, contactData, getAuthHeader()),
+    axiosInstance.put(`/contacts/update/${contactId}`, contactData, getAuthHeader()),
   deleteContact: (contactId) =>
-    axios.delete(`${API_BASE_URL}/contacts/delete/${contactId}`, getAuthHeader()),
+    axiosInstance.delete(`/contacts/delete/${contactId}`, getAuthHeader()),
   searchContacts: (query) =>
-    axios.get(`${API_BASE_URL}/contacts/search/${query}`, getAuthHeader()),
+    axiosInstance.get(`/contacts/search/${query}`, getAuthHeader()),
 };
 
 export const settingsAPI = {
   getSettings: () =>
-    axios.get(`${API_BASE_URL}/settings/get`),
+    axiosInstance.get(`/settings/get`),
   updatePin: (currentPin, newPin) =>
-    axios.post(`${API_BASE_URL}/settings/update-pin`, { currentPin, newPin }),
+    axiosInstance.post(`/settings/update-pin`, { currentPin, newPin }),
   updatePhone: (newPhone) =>
-    axios.post(`${API_BASE_URL}/settings/update-phone`, { adminPhone: newPhone }),
+    axiosInstance.post(`/settings/update-phone`, { adminPhone: newPhone }),
 };

@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+import axios from 'axios';
 import connectDB, { getDBStatus } from './config/db.js';
 import authRoutes from './routes/auth.js';
 import tasksRoutes from './routes/tasks.js';
@@ -179,6 +180,22 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+const server = app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  
+  // Keep-alive: Ping the server every 14 minutes to prevent Render sleep
+  if (process.env.NODE_ENV === 'production') {
+    const keepAliveInterval = 14 * 60 * 1000; // 14 minutes
+    setInterval(async () => {
+      try {
+        // Ping the health endpoint
+        const baseURL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+        await axios.get(`${baseURL}/api/health`, { timeout: 5000 });
+        console.log('✅ Keep-alive ping sent successfully');
+      } catch (error) {
+        console.log('⚠️  Keep-alive ping failed (optional):', error.message);
+      }
+    }, keepAliveInterval);
+    console.log('⏰ Keep-alive ping scheduled every 14 minutes');
+  }
 });
