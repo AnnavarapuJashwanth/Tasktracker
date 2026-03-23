@@ -21,7 +21,6 @@ const taskSchema = new mongoose.Schema({
   },
   sector: {
     type: String,
-    enum: ['Vignan University', 'Narasarapet Region'],
     required: true,
   },
   assignedTo: {

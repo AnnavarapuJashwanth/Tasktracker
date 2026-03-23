@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FaPlus, FaTrash, FaPlay, FaCheck, FaShare, FaUsers, FaTimes, FaPhone, FaEdit } from 'react-icons/fa';
-import { tasksAPI, whatsappAPI } from '../api';
+import { tasksAPI, whatsappAPI, settingsAPI } from '../api';
 import TaskForm from './TaskForm';
 import TaskCard from './TaskCard';
 import SessionTimer from './SessionTimer';
@@ -13,6 +13,7 @@ function Tasks({ adminPin, selectedAssignee, selectedStatus, selectedSector: sel
   const [editingTask, setEditingTask] = useState(null);
   const [selectedSectorLocal, setSelectedSectorLocal] = useState(selectedSectorProp || 'all');
   const [selectedStatusLocal, setSelectedStatusLocal] = useState(selectedStatus || 'all');
+  const [sectors, setSectors] = useState([]);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [showMessageModal, setShowMessageModal] = useState(false);
@@ -39,6 +40,20 @@ function Tasks({ adminPin, selectedAssignee, selectedStatus, selectedSector: sel
       setSelectedSectorLocal(selectedSectorProp);
     }
   }, [selectedSectorProp]);
+
+  useEffect(() => {
+    async function loadSectors() {
+      try {
+        const response = await settingsAPI.getSettings();
+        if (response.data && response.data.sectors) {
+          setSectors(response.data.sectors);
+        }
+      } catch (err) {
+        console.error('Failed to load sectors', err);
+      }
+    }
+    loadSectors();
+  }, []);
 
   useEffect(() => {
     loadTasks();
@@ -520,8 +535,9 @@ ${photoUrl}`;
           className="form-select"
         >
           <option value="all">All Sectors</option>
-          <option value="Vignan University">Vignan University</option>
-          <option value="Narasarapet Region">Narasarapet Region</option>
+          {sectors.map(s => (
+            <option key={s} value={s}>{s}</option>
+          ))}
         </select>
 
         <select

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaPlus, FaEdit, FaTimes, FaImage, FaUser, FaPhone } from 'react-icons/fa';
-import { contactsAPI } from '../api';
+import { contactsAPI, settingsAPI } from '../api';
 
 function TaskForm({ onSubmit, onCancel, editingTask }) {
   const [formData, setFormData] = useState({
@@ -8,7 +8,7 @@ function TaskForm({ onSubmit, onCancel, editingTask }) {
     description: '',
     priority: 'Medium',
     category: 'Request',
-    sector: 'Vignan University',
+    sector: '',
     dueDate: '',
     referenceNumber: '',
     assignedToContactId: '',
@@ -20,8 +20,10 @@ function TaskForm({ onSubmit, onCancel, editingTask }) {
   const [contacts, setContacts] = useState([]);
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [photoPreview, setPhotoPreview] = useState(null);
+  const [sectors, setSectors] = useState([]);
 
   useEffect(() => {
+    loadSectors();
     if (editingTask) {
       // Format the date properly for the input field (yyyy-MM-dd format)
       let formattedDate = editingTask.dueDate;
@@ -40,6 +42,20 @@ function TaskForm({ onSubmit, onCancel, editingTask }) {
     }
     loadContacts();
   }, [editingTask]);
+
+  const loadSectors = async () => {
+    try {
+      const response = await settingsAPI.getSettings();
+      if (response.data && response.data.sectors) {
+        setSectors(response.data.sectors);
+        if (!editingTask && response.data.sectors.length > 0) {
+          setFormData(prev => ({ ...prev, sector: response.data.sectors[0] }));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load sectors', err);
+    }
+  };
 
   const loadContacts = async () => {
     setLoadingContacts(true);
@@ -125,7 +141,7 @@ function TaskForm({ onSubmit, onCancel, editingTask }) {
         description: '',
         priority: 'Medium',
         category: 'Request',
-        sector: 'Vignan University',
+        sector: sectors.length > 0 ? sectors[0] : '',
         dueDate: '',
         referencePhone: '',
         referenceNumber: '',
@@ -307,8 +323,10 @@ function TaskForm({ onSubmit, onCancel, editingTask }) {
               onChange={handleChange}
               className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-blue-600 focus:outline-none text-gray-800 cursor-pointer"
             >
-              <option value="Vignan University">🎓 Vignan University</option>
-              <option value="Narasarapet Region">🏢 Narasarapet Region</option>
+              <option value="">Select Sector</option>
+              {sectors.map(s => (
+                <option key={s} value={s}>{s}</option>
+              ))}
             </select>
           </div>
 

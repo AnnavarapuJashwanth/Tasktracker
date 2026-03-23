@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaLock, FaWhatsapp, FaCheckCircle, FaInfo, FaSave } from 'react-icons/fa';
+import { FaLock, FaWhatsapp, FaCheckCircle, FaInfo, FaSave, FaTrash, FaList } from 'react-icons/fa';
 import { settingsAPI } from '../api';
 
 function Settings() {
@@ -9,6 +9,8 @@ function Settings() {
   const [adminPhone, setAdminPhone] = useState('+919908939746');
   const [message, setMessage] = useState('');
   const [loadingSettings, setLoadingSettings] = useState(true);
+  const [sectors, setSectors] = useState([]);
+  const [newSector, setNewSector] = useState('');
 
   useEffect(() => {
     // Load current PIN from backend (source of truth)
@@ -19,6 +21,7 @@ function Settings() {
         if (data.success) {
           setAdminPin(data.adminPin);
           localStorage.setItem('adminPin', data.adminPin);
+          if (data.sectors) setSectors(data.sectors);
         } else {
           // Fallback to localStorage
           const saved = localStorage.getItem('adminPin');
@@ -87,6 +90,38 @@ function Settings() {
     window.dispatchEvent(new CustomEvent('adminPhoneUpdated', { detail: { phone: adminPhone } }));
     setMessage('✓ Admin phone updated successfully!');
     setTimeout(() => setMessage(''), 3000);
+  };
+
+  const handleAddSector = async (e) => {
+    e.preventDefault();
+    if (!newSector.trim()) return;
+    try {
+      const response = await settingsAPI.addSector(newSector.trim());
+      if (response.data.success) {
+        setSectors(response.data.sectors);
+        setNewSector('');
+        setMessage('✓ Sector added successfully!');
+        setTimeout(() => setMessage(''), 3000);
+      }
+    } catch (error) {
+      setMessage(`❌ Error adding sector: ${error.message}`);
+      setTimeout(() => setMessage(''), 3000);
+    }
+  };
+
+  const handleDeleteSector = async (sectorToDelete) => {
+    if (!window.confirm(`Are you sure you want to delete ${sectorToDelete}?`)) return;
+    try {
+      const response = await settingsAPI.deleteSector(sectorToDelete);
+      if (response.data.success) {
+        setSectors(response.data.sectors);
+        setMessage('✓ Sector deleted successfully!');
+        setTimeout(() => setMessage(''), 3000);
+      }
+    } catch (error) {
+      setMessage(`❌ Error deleting sector: ${error.message}`);
+      setTimeout(() => setMessage(''), 3000);
+    }
   };
 
   return (
@@ -240,6 +275,57 @@ function Settings() {
                 Update Number
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Sector Management Section */}
+      <div className="bg-white rounded-2xl shadow-md p-8 mb-10 border-t-4 border-amber-600">
+        <div className="flex items-center gap-4 mb-8">
+          <div className="bg-amber-600 text-white p-4 rounded-xl">
+            <FaList className="text-2xl" />
+          </div>
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">Manage Sectors</h2>
+            <p className="text-gray-600">Add or remove task sectors</p>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          <form onSubmit={handleAddSector} className="flex gap-4 items-end">
+            <div className="flex-1">
+              <label className="block text-sm font-bold text-gray-700 uppercase mb-3">New Sector Name</label>
+              <input
+                type="text"
+                value={newSector}
+                onChange={(e) => setNewSector(e.target.value)}
+                placeholder="Enter sector name"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-sm focus:border-amber-600 focus:outline-none"
+              />
+            </div>
+            <button
+              type="submit"
+              className="px-6 py-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg transition-colors"
+            >
+              Add
+            </button>
+          </form>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            {sectors && sectors.length > 0 ? sectors.map((sector) => (
+              <div key={sector} className="flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-full border border-gray-200">
+                <span className="font-semibold text-gray-800">{sector}</span>
+                <button
+                  onClick={() => handleDeleteSector(sector)}
+                  className="text-red-500 hover:text-red-700 focus:outline-none ml-2"
+                  title="Remove sector"
+                >
+                  <FaTrash size={14} />
+                </button>
+              </div>
+            )) : (
+              <p className="text-gray-500 italic">No sectors configured.</p>
+            )}
           </div>
         </div>
       </div>

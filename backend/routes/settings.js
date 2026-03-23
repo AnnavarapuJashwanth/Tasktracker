@@ -56,6 +56,7 @@ router.get('/get', async (req, res) => {
       success: true,
       adminPin: settings.adminPin,
       adminPhone: settings.adminPhone,
+      sectors: settings.sectors,
     });
   } catch (error) {
     console.error('Error fetching settings:', error.message);
@@ -64,6 +65,7 @@ router.get('/get', async (req, res) => {
       success: true,
       adminPin: process.env.ADMIN_PIN || '1234',
       adminPhone: process.env.ADMIN_PHONE_NUMBER || '+919908939746',
+      sectors: ['Vignan University', 'Narasarapet Region'],
       source: 'environment (database unavailable)',
     });
   }
@@ -184,6 +186,56 @@ router.post('/update-phone', async (req, res) => {
       message: 'Error updating phone',
       error: error.message,
     });
+  }
+});
+
+// Add sector
+router.post('/sectors', async (req, res) => {
+  try {
+    const { newSector } = req.body;
+    if (!newSector) {
+      return res.status(400).json({ success: false, message: 'Sector name is required' });
+    }
+
+    let settings = await Settings.findOne();
+    if (!settings) {
+      settings = new Settings({});
+    }
+
+    if (!settings.sectors) {
+      settings.sectors = ['Vignan University', 'Narasarapet Region'];
+    }
+
+    if (!settings.sectors.includes(newSector)) {
+      settings.sectors.push(newSector);
+      settings.updatedAt = new Date();
+      await settings.save();
+    }
+
+    res.json({ success: true, sectors: settings.sectors });
+  } catch (error) {
+    console.error('Error adding sector:', error);
+    res.status(500).json({ success: false, message: 'Error adding sector', error: error.message });
+  }
+});
+
+// Delete sector
+router.delete('/sectors/:sector', async (req, res) => {
+  try {
+    const { sector } = req.params;
+    let settings = await Settings.findOne();
+    if (!settings) settings = new Settings({});
+
+    if (settings.sectors) {
+      settings.sectors = settings.sectors.filter(s => s !== sector);
+      settings.updatedAt = new Date();
+      await settings.save();
+    }
+
+    res.json({ success: true, sectors: settings.sectors });
+  } catch (error) {
+    console.error('Error removing sector:', error);
+    res.status(500).json({ success: false, message: 'Error removing sector', error: error.message });
   }
 });
 

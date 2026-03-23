@@ -1,3 +1,4 @@
+import 'express-async-errors';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -172,10 +173,41 @@ app.post('/api/auth/login', (req, res) => {
   }
 });
 
-// Error handling middleware
+// Centralized Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!', error: err.message });
+  console.error('❌ [Global Error Handler]:', err.stack || err);
+  
+  // Mongoose validation errors
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({
+      success: false,
+      message: 'Validation Error',
+      errors: Object.values(err.errors).map(val => val.message)
+    });
+  }
+
+  // Mongoose duplicate key
+  if (err.code === 11000) {
+    return res.status(400).json({
+      success: false,
+      message: 'Duplicate value entered for field, please choose another value'
+    });
+  }
+
+  // Mongoose bad object id
+  if (err.name === 'CastError') {
+    return res.status(404).json({
+      success: false,
+      message: `Resource not found with id of ${err.value}`
+    });
+  }
+
+  const statusCode = err.statusCode || 500;
+  res.status(statusCode).json({
+    success: false,
+    message: err.message || 'An unexpected server error occurred.',
+    stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined
+  });
 });
 
 const PORT = process.env.PORT || 5000;

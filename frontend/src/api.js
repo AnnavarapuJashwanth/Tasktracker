@@ -119,4 +119,8 @@ export const settingsAPI = {
     axiosInstance.post(`/settings/update-pin`, { currentPin, newPin }),
   updatePhone: (newPhone) =>
     axiosInstance.post(`/settings/update-phone`, { adminPhone: newPhone }),
+  addSector: (newSector) =>
+    axiosInstance.post(`/settings/sectors`, { newSector }),
+  deleteSector: (sector) =>
+    axiosInstance.delete(`/settings/sectors/${encodeURIComponent(sector)}`),
 };

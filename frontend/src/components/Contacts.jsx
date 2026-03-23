@@ -1,17 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { FaPhone, FaPlus, FaTrash, FaEdit, FaWhatsapp, FaTimes } from 'react-icons/fa';
-import { contactsAPI } from '../api';
-
-// Sector/Department options
-const SECTORS = [
-  { id: 'Vignan University', label: 'Vignan University' },
-  { id: 'Narasaraopet Region', label: 'Narasaraopet Region' },
-  { id: 'Other', label: 'Other' },
-];
+import { contactsAPI, settingsAPI } from '../api';
 
 function Contacts() {
   const [contacts, setContacts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [sectors, setSectors] = useState([]);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [showForm, setShowForm] = useState(false);
@@ -31,7 +25,19 @@ function Contacts() {
 
   useEffect(() => {
     loadContacts();
+    loadSectors();
   }, []);
+
+  const loadSectors = async () => {
+    try {
+      const response = await settingsAPI.getSettings();
+      if (response.data && response.data.sectors) {
+        setSectors(response.data.sectors);
+      }
+    } catch (err) {
+      console.error('Failed to load sectors', err);
+    }
+  };
 
   const loadContacts = async () => {
     setLoading(true);
@@ -137,7 +143,7 @@ function Contacts() {
 
   // Get sector label from id
   const getSectorLabel = (sectorId) => {
-    return SECTORS.find(s => s.id === sectorId)?.label || sectorId || '-';
+    return sectorId || '-';
   };
 
   // Filter contacts by selected sector
@@ -180,17 +186,17 @@ function Contacts() {
           >
             All Sectors
           </button>
-          {SECTORS.map(sector => (
+          {sectors.map(sector => (
             <button
-              key={sector.id}
-              onClick={() => setSelectedSectorFilter(sector.id)}
+              key={sector}
+              onClick={() => setSelectedSectorFilter(sector)}
               className={`flex-1 px-3 md:px-4 py-2 rounded-lg font-semibold text-sm md:text-base transition-colors ${
-                selectedSectorFilter === sector.id
+                selectedSectorFilter === sector
                   ? 'bg-purple-600 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              {sector.label} ({contacts.filter(c => c.department === sector.id).length})
+              {sector}
             </button>
           ))}
         </div>
@@ -212,8 +218,8 @@ function Contacts() {
                 <label className="block text-xs md:text-sm font-bold text-gray-700 mb-1 md:mb-2">Sector *</label>
                 <select name="department" value={formData.department} onChange={handleFormChange} className="w-full px-3 md:px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-blue-600 outline-none text-sm md:text-base" required>
                   <option value="">Select Sector</option>
-                  {SECTORS.map(sector => (
-                    <option key={sector.id} value={sector.id}>{sector.label}</option>
+                  {sectors.map(sector => (
+                    <option key={sector} value={sector}>{sector}</option>
                   ))}
                 </select>
               </div>

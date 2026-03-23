@@ -9,6 +9,10 @@ const settingsSchema = new mongoose.Schema({
     type: String,
     default: '+919908939746',
   },
+  sectors: {
+    type: [String],
+    default: ['Vignan University', 'Narasarapet Region'],
+  },
   updatedAt: {
     type: Date,
     default: Date.now,

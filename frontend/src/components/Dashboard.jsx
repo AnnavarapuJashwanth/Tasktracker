@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { FaClipboard, FaClock, FaCheckCircle, FaExclamation, FaChartLine, FaArrowUp, FaCalendar, FaUser } from 'react-icons/fa';
-import { tasksAPI, contactsAPI } from '../api';
+import { tasksAPI, contactsAPI, settingsAPI } from '../api';
 
 function Dashboard({ adminPin, onNavigateToTasks }) {
   const [stats, setStats] = useState({ total: 0, pending: 0, inProgress: 0, completed: 0 });
   const [todayTasks, setTodayTasks] = useState([]);
   const [assigneeStats, setAssigneeStats] = useState([]); // New state for assignee data
+  const [sectorsCount, setSectorsCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [mainCard, setMainCard] = useState('total'); // 'total', 'pending', 'inProgress', 'completed'
@@ -33,7 +34,16 @@ function Dashboard({ adminPin, onNavigateToTasks }) {
 
       const response = await tasksAPI.getStats();
       setStats(response.data);
-      
+
+      try {
+        const settingsRes = await settingsAPI.getSettings();
+        if (settingsRes.data && settingsRes.data.sectors) {
+          setSectorsCount(settingsRes.data.sectors.length);
+        }
+      } catch (err) {
+        console.warn('Could not fetch settings:', err.message);
+      }
+
       // Fetch all contacts for phone number lookup
       let contactsMap = new Map();
       try {
@@ -41,8 +51,10 @@ function Dashboard({ adminPin, onNavigateToTasks }) {
         if (contactsResponse.data && Array.isArray(contactsResponse.data)) {
           contactsResponse.data.forEach(contact => {
             // Store both exact name match and lowercase match
-            contactsMap.set(contact.name, contact.phone);
-            contactsMap.set(contact.name.toLowerCase(), contact.phone);
+            if (contact && typeof contact.name === 'string') {
+              contactsMap.set(contact.name, contact.phone);
+              contactsMap.set(contact.name.toLowerCase(), contact.phone);
+            }
           });
         }
       } catch (contactErr) {
@@ -54,9 +66,13 @@ function Dashboard({ adminPin, onNavigateToTasks }) {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      const todayTasksList = allTasks.data
+      const tasksData = Array.isArray(allTasks.data) ? allTasks.data : (allTasks.data?.tasks || []);
+      
+      const todayTasksList = tasksData
         .filter(task => {
+          if (!task || !task.createdAt) return false;
           const taskDate = new Date(task.createdAt);
+          if (isNaN(taskDate.getTime())) return false;
           taskDate.setHours(0, 0, 0, 0);
           return taskDate.getTime() === today.getTime();
         })
@@ -67,17 +83,18 @@ function Dashboard({ adminPin, onNavigateToTasks }) {
 
       // GROUP TASKS BY ASSIGNEE
       const assigneeMap = new Map();
-      allTasks.data.forEach(task => {
+      tasksData.forEach(task => {
+        if (!task) return;
         // Use assignedToContact since that's what gets set during task creation
         const assigneeName = task.assignedToContact || task.assignedTo;
         
-        if (assigneeName) {
+        if (assigneeName && typeof assigneeName === 'string') {
           if (!assigneeMap.has(assigneeName)) {
             // Try to get phone number from multiple sources
             let phone = task.assignedToPhone || task.referencePhone;
             
             // If no phone, try to extract from assignedToContact (format: "Name (+91...)")
-            if (!phone && task.assignedToContact) {
+            if (!phone && typeof task.assignedToContact === 'string') {
               const phoneMatch = task.assignedToContact.match(/\(\+[\d\s\-]+\)/);
               if (phoneMatch) {
                 phone = phoneMatch[0].replace(/[^\d+]/g, '');
@@ -113,7 +130,7 @@ function Dashboard({ adminPin, onNavigateToTasks }) {
       // Convert map to array and sort by total tasks (descending)
       const assigneeArray = Array.from(assigneeMap.values())
         .sort((a, b) => b.total - a.total);
-      
+
       setAssigneeStats(assigneeArray);
       setError('');
       setLoading(false);
@@ -123,7 +140,7 @@ function Dashboard({ adminPin, onNavigateToTasks }) {
       if (err.response?.status === 401) {
         setError('Not authenticated. Please login again.');
       } else {
-        setError('Failed to load statistics. Please try again.');
+        setError('Failed to load statistics. Please try again. ' + (err.message || ''));
       }
       setLoading(false);
     }
@@ -343,110 +360,38 @@ function Dashboard({ adminPin, onNavigateToTasks }) {
         )}
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
-        {/* Completion Overview - Left */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-8 shadow-md">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Task Overview</h2>
-            <FaChartLine className="text-blue-600 text-2xl" />
-          </div>
-
-          {/* Progress Bars */}
-          <div className="space-y-6">
-            {/* Pending Progress */}
+      {/* Quick Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        {/* Total Sectors */}
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border-l-4 border-blue-600">
+          <div className="flex items-center justify-between">
             <div>
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-700 font-semibold">Pending Tasks</span>
-                <span className="text-amber-600 font-bold">{stats.pending}</span>
-              </div>
-              <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-amber-500 rounded-full transition-all duration-500"
-                  style={{ width: `${stats.total > 0 ? (stats.pending / stats.total) * 100 : 0}%` }}
-                ></div>
-              </div>
+              <p className="text-gray-600 text-sm font-semibold uppercase mb-1">Total Sectors</p>
+              <p className="text-3xl font-bold text-blue-900">{sectorsCount}</p>
             </div>
-
-            {/* In Progress */}
-            <div>
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-700 font-semibold">In Progress</span>
-                <span className="text-purple-600 font-bold">{stats.inProgress}</span>
-              </div>
-              <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-purple-500 rounded-full transition-all duration-500"
-                  style={{ width: `${stats.total > 0 ? (stats.inProgress / stats.total) * 100 : 0}%` }}
-                ></div>
-              </div>
-            </div>
-
-            {/* Completed */}
-            <div>
-              <div className="flex justify-between mb-2">
-                <span className="text-gray-700 font-semibold">Completed</span>
-                <span className="text-green-600 font-bold">{stats.completed}</span>
-              </div>
-              <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-green-500 rounded-full transition-all duration-500"
-                  style={{ width: `${stats.total > 0 ? (stats.completed / stats.total) * 100 : 0}%` }}
-                ></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Summary Stats */}
-          <div className="grid grid-cols-3 gap-4 mt-8 pt-6 border-t border-gray-200">
-            <div className="text-center">
-              <p className="text-gray-500 text-sm uppercase font-semibold mb-2">Completion Rate</p>
-              <p className="text-3xl font-bold text-green-600">{completionRate}%</p>
-            </div>
-            <div className="text-center">
-              <p className="text-gray-500 text-sm uppercase font-semibold mb-2">Avg. Per Day</p>
-              <p className="text-3xl font-bold text-blue-600">{stats.total > 0 ? Math.ceil(stats.total / 30) : 0}</p>
-            </div>
-            <div className="text-center">
-              <p className="text-gray-500 text-sm uppercase font-semibold mb-2">Pending</p>
-              <p className="text-3xl font-bold text-amber-600">{stats.pending}</p>
-            </div>
+            <FaClipboard className="text-blue-600 text-4xl opacity-20" />
           </div>
         </div>
 
-        {/* Quick Stats - Right */}
-        <div className="space-y-6">
-          {/* Total Categories */}
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border-l-4 border-blue-600">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-semibold uppercase mb-1">Total Sectors</p>
-                <p className="text-3xl font-bold text-blue-900">2</p>
-              </div>
-              <FaClipboard className="text-blue-600 text-4xl opacity-20" />
+        {/* Success Rate */}
+        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border-l-4 border-green-600">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600 text-sm font-semibold uppercase mb-1">Success Rate</p>
+              <p className="text-3xl font-bold text-green-900">{completionRate}%</p>
             </div>
+            <FaCheckCircle className="text-green-600 text-4xl opacity-20" />
           </div>
+        </div>
 
-          {/* Success Rate */}
-          <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-6 border-l-4 border-green-600">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-semibold uppercase mb-1">Success Rate</p>
-                <p className="text-3xl font-bold text-green-900">{completionRate}%</p>
-              </div>
-              <FaCheckCircle className="text-green-600 text-4xl opacity-20" />
+        {/* Active Tasks */}
+        <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border-l-4 border-purple-600">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600 text-sm font-semibold uppercase mb-1">Active Tasks</p>
+              <p className="text-3xl font-bold text-purple-900">{stats.inProgress}</p>
             </div>
-          </div>
-
-          {/* Active Tasks */}
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border-l-4 border-purple-600">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-gray-600 text-sm font-semibold uppercase mb-1">Active Tasks</p>
-                <p className="text-3xl font-bold text-purple-900">{stats.inProgress}</p>
-              </div>
-              <FaClock className="text-purple-600 text-4xl opacity-20" />
-            </div>
+            <FaClock className="text-purple-600 text-4xl opacity-20" />
           </div>
         </div>
       </div>
