@@ -37,6 +37,11 @@ const allowedOrigins = [
   // Production - Netlify
   'https://tasktracker4297.netlify.app',
   'https://tasktracker-4xm2.onrender.com',
+  // Custom domains
+  'https://krishnalavu.com',
+  'https://www.krishnalvu.com',
+  'https://krishnalvu.com',
+  'https://www.krishnalavu.com',
   // Add any custom domain or additional frontend URLs
   process.env.FRONTEND_URL,
 ].filter(Boolean);
