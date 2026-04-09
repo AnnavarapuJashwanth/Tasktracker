@@ -339,7 +339,8 @@ Thank you for your patience. For any queries, please contact us.`;
       let assignMessage = `✅ *TASK ASSIGNED*
 
 *Task:* ${task.title}
-
+${task.referenceNumber ? `*Reference #:* ${task.referenceNumber}
+` : ''}
 *Description:* ${task.description}
 
 *Status:* ${task.status}
@@ -427,7 +428,8 @@ Thank you!`;
     let message = `📌 *TASK UPDATE*
 
 *Task:* ${task.title}
-
+${task.referenceNumber ? `*Reference #:* ${task.referenceNumber}
+` : ''}
 *Description:* ${task.description}
 
 *Assigned To:* ${task.assignedToContact || 'To be assigned'}

@@ -67,6 +67,7 @@ function Login({ onLogin }) {
               placeholder="••••"
               maxLength="4"
               required
+              autocomplete="new-password"
               className="form-input text-center text-2xl font-bold tracking-widest"
             />
           </div>
